@@ -37,7 +37,8 @@ def get_data() -> pd.DataFrame:
     # Impute remaining missing values for stable visualization
     for col in NUMERIC_COLS:
         if col in df.columns:
-            df[col].fillna(df[col].median(), inplace=True)
+            median_val = df[col].median()
+            df[col] = df[col].fillna(median_val)
 
     _CACHED_DF = df
     return _CACHED_DF

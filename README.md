@@ -54,10 +54,18 @@ cd Mandiflow-agricultural-supply-chain-analytics
 
 ### 2. Configure API key
 
-Get a free key at [console.groq.com](https://console.groq.com), then add it to `.env`:
+Copy `.env.example` to `.env`:
 
+```bash
+cp .env.example .env
 ```
+
+Add your Groq API key (get a free key at [console.groq.com](https://console.groq.com)):
+
+```ini
 GROQ_API_KEY=gsk_your_key_here
+# Optional: Auto-detects available models (e.g., openai/gpt-oss-120b, qwen/qwen3.8-27b, llama-3.3-70b-versatile)
+# GROQ_MODEL=openai/gpt-oss-120b
 ```
 
 ### 3. Run

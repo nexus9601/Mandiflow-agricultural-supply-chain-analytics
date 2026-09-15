@@ -4,37 +4,37 @@ from dash import html, dcc
 def layout():
     return html.Div([
         html.Div([
-            html.H2("✨ AI Agent Analytics Dashboard", className="page-title"),
+            html.H2("✨ AI Analytics", className="page-title"),
             html.P(
-                "Ask questions in natural language. The agent synthesizes and renders custom Plotly visualizations.",
-                className="page-desc"
-            )
+                "Query arrivals, modal prices, MSP, weather, and transport data using natural language.",
+                className="page-desc",
+            ),
         ], className="page-header"),
 
-        # Query Input Card
         html.Div([
+            # Sleek Chat Input Card
             html.Div([
+                html.Span("💬", className="chat-input-icon"),
+                dcc.Input(
+                    id="ai-query-input",
+                    type="text",
+                    placeholder="Ask a question (e.g. Compare modal price against MSP for Wheat across mandis)...",
+                    debounce=False,
+                    className="chat-query-input",
+                    n_submit=0,
+                ),
                 html.Div([
-                    dcc.Input(
-                        id="ai-query-input",
-                        type="text",
-                        placeholder="e.g. Compare modal price across top 10 districts for Wheat as a bar chart",
-                        className="mandi-input"
-                    )
-                ], style={"flex": "5"}),
-                html.Div([
-                    html.Button("Generate Visualization", id="ai-run-btn", n_clicks=0, className="mandi-btn", style={"width": "100%"})
-                ], style={"flex": "1.5"}),
-            ], style={"display": "flex", "gap": "1rem", "alignItems": "center"}),
-        ], className="mandi-card"),
+                    html.Button("Send ↵", id="ai-run-btn", n_clicks=0, className="chat-send-btn"),
+                    html.Button("Clear", id="ai-clear-btn", n_clicks=0, className="chat-reset-btn"),
+                ], className="chat-actions"),
+            ], className="chat-input-card"),
 
-        # Dynamic Results Section
-        dcc.Loading(
-            id="ai-loading",
-            type="dot",
-            color="#689f38",
-            children=[
-                html.Div(id="ai-output-container")
-            ]
-        )
+            # Chat History Feed with loading indicator
+            dcc.Loading(
+                id="ai-loading",
+                type="circle",
+                color="#8bc34a",
+                children=html.Div(id="chat-history-display", className="chat-history-feed"),
+            ),
+        ], className="ai-chat-wrapper"),
     ])
