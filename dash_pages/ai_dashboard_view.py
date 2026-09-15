@@ -12,13 +12,24 @@ def layout():
         ], className="page-header"),
 
         html.Div([
+            # Command helper pills bar
+            html.Div([
+                html.Span("Commands:", className="command-hint-label"),
+                html.Button("/new <query>", className="command-pill",
+                            id="pill-new", n_clicks=0),
+                html.Button("/followup <changes>", className="command-pill command-pill--followup",
+                            id="pill-followup", n_clicks=0),
+                html.Button("/insight [question]", className="command-pill command-pill--insight",
+                            id="pill-insight", n_clicks=0),
+            ], className="command-hint-bar"),
+
             # Sleek Chat Input Card
             html.Div([
                 html.Span("💬", className="chat-input-icon"),
                 dcc.Input(
                     id="ai-query-input",
                     type="text",
-                    placeholder="Ask a question (e.g. Compare modal price against MSP for Wheat across mandis)...",
+                    placeholder="Ask a question, or use /new  /followup  /insight  commands...",
                     debounce=False,
                     className="chat-query-input",
                     n_submit=0,

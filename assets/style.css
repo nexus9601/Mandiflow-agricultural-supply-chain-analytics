@@ -633,6 +633,207 @@ html, body {
     margin-bottom: 0.3rem;
 }
 
+/* ── Command Hint Pills ──────────────────────────────────────── */
+.command-hint-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+}
+
+.command-hint-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+}
+
+.command-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28rem 0.7rem;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: rgba(104, 159, 56, 0.12);
+    border: 1px solid rgba(104, 159, 56, 0.3);
+    color: var(--green-light);
+    white-space: nowrap;
+    user-select: none;
+}
+
+.command-pill:hover {
+    background: rgba(104, 159, 56, 0.22);
+    border-color: var(--green-accent);
+    color: var(--green-accent);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(139, 195, 74, 0.2);
+}
+
+.command-pill--followup {
+    background: rgba(229, 160, 36, 0.1);
+    border-color: rgba(229, 160, 36, 0.3);
+    color: #f5c66a;
+}
+
+.command-pill--followup:hover {
+    background: rgba(229, 160, 36, 0.2);
+    border-color: var(--amber-accent);
+    color: var(--amber-accent);
+    box-shadow: 0 2px 8px rgba(229, 160, 36, 0.2);
+}
+
+.command-pill--insight {
+    background: rgba(100, 160, 255, 0.08);
+    border-color: rgba(100, 160, 255, 0.25);
+    color: #99c4ff;
+}
+
+.command-pill--insight:hover {
+    background: rgba(100, 160, 255, 0.16);
+    border-color: #99c4ff;
+    color: #b8d6ff;
+    box-shadow: 0 2px 8px rgba(100, 160, 255, 0.15);
+}
+
+/* ── Chart Action Buttons ─────────────────────────────────────── */
+.chat-action-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.42rem 0.95rem;
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    border: 1px solid;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+}
+
+.action-btn-icon {
+    font-size: 0.88rem;
+    line-height: 1;
+}
+
+.action-btn--insight {
+    background: rgba(100, 160, 255, 0.08);
+    border-color: rgba(100, 160, 255, 0.28);
+    color: #99c4ff;
+}
+
+.action-btn--insight:hover {
+    background: rgba(100, 160, 255, 0.18);
+    border-color: #99c4ff;
+    color: #c2daff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 12px rgba(100, 160, 255, 0.2);
+}
+
+.action-btn--followup {
+    background: rgba(229, 160, 36, 0.08);
+    border-color: rgba(229, 160, 36, 0.28);
+    color: #f5c66a;
+}
+
+.action-btn--followup:hover {
+    background: rgba(229, 160, 36, 0.18);
+    border-color: var(--amber-accent);
+    color: var(--amber-accent);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 12px rgba(229, 160, 36, 0.2);
+}
+
+/* ── AI Market Insight Card ──────────────────────────────────── */
+.chat-insight-card {
+    background: linear-gradient(135deg, #121c08 0%, #0e1a1f 100%);
+    border: 1px solid rgba(100, 160, 255, 0.22);
+    border-left: 3px solid #5aa3f0;
+    border-radius: 4px 16px 16px 16px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+.insight-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin-top: 0.25rem;
+}
+
+.insight-section {
+    margin-bottom: 0.6rem;
+}
+
+.insight-heading {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #a8ceff;
+    margin-bottom: 0.5rem;
+    margin-top: 0.75rem;
+    letter-spacing: 0.01em;
+    border-bottom: 1px solid rgba(100, 160, 255, 0.12);
+    padding-bottom: 0.3rem;
+}
+
+.insight-subheading {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--green-light);
+    margin-bottom: 0.35rem;
+    margin-top: 0.5rem;
+}
+
+.insight-para {
+    font-size: 0.88rem;
+    color: var(--cream);
+    line-height: 1.55;
+    margin: 0.2rem 0;
+}
+
+.insight-bullet {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    padding: 0.28rem 0;
+}
+
+.insight-bullet-dot {
+    color: #5aa3f0;
+    font-size: 1rem;
+    line-height: 1.4;
+    flex-shrink: 0;
+    font-weight: 700;
+}
+
+.insight-bullet-text {
+    font-size: 0.87rem;
+    color: #cce0f5;
+    line-height: 1.5;
+}
+
+.insight-bullet-text strong {
+    color: var(--cream);
+    font-weight: 700;
+}
+
 /* ── DataTable & Dropdowns (Mandi theme) ──────────────────────── */
 .Select-control {
     background: #11180b !important;
