@@ -1,0 +1,249 @@
+/* MandiFlow Agriculture Dark Theme */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --bg-dark:    #11170c;
+    --card-bg:    #1b2413;
+    --card-border:#2a381c;
+    --green-accent:#689f38;
+    --green-light:#8bc34a;
+    --amber-accent:#d4952a;
+    --text-primary:#dde8c8;
+    --text-muted:  #788c60;
+    --radius:      8px;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ── Top Navbar ─────────────────────────────────── */
+.mandi-navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--card-border);
+    padding: 0.75rem 2.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar-brand {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+}
+
+.navbar-brand span.subtitle {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--text-muted);
+}
+
+.nav-menu {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.nav-tab-link {
+    text-decoration: none;
+    color: var(--text-muted);
+    padding: 0.45rem 1.1rem;
+    border-radius: var(--radius);
+    font-size: 0.88rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.nav-tab-link:hover {
+    color: var(--text-primary);
+    background-color: rgba(104, 159, 56, 0.12);
+    border-color: var(--card-border);
+}
+
+.nav-tab-link.active {
+    color: var(--green-light);
+    background-color: rgba(104, 159, 56, 0.18);
+    border-color: var(--green-accent);
+    font-weight: 600;
+}
+
+/* ── Main Layout Container ───────────────────────── */
+.main-container {
+    max-width: 1300px;
+    margin: 1.8rem auto;
+    padding: 0 2rem;
+}
+
+.page-header {
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--card-border);
+    padding-bottom: 0.75rem;
+}
+
+.page-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.page-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0.25rem 0 0;
+}
+
+/* ── Metric Cards ────────────────────────────────── */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.metric-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.3rem;
+}
+
+.metric-value {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: var(--green-light);
+    line-height: 1;
+}
+
+.metric-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-top: 0.45rem;
+}
+
+/* ── Content Card ────────────────────────────────── */
+.mandi-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 1.4rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ── Forms, Inputs & Buttons ─────────────────────── */
+.mandi-input {
+    background-color: #0e140a !important;
+    border: 1px solid var(--card-border) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius) !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.95rem !important;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.mandi-input:focus {
+    outline: none;
+    border-color: var(--green-accent) !important;
+    box-shadow: 0 0 0 2px rgba(104, 159, 56, 0.2) !important;
+}
+
+.mandi-btn {
+    background-color: var(--green-accent) !important;
+    color: #0a0f05 !important;
+    border: none !important;
+    border-radius: var(--radius) !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    padding: 0.75rem 1.8rem !important;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.mandi-btn:hover {
+    background-color: var(--green-light) !important;
+}
+
+/* ── Dropdowns / Selects ──────────────────────────── */
+.Select-control {
+    background-color: #0e140a !important;
+    border: 1px solid var(--card-border) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius) !important;
+}
+
+.Select-value-label, .Select-placeholder {
+    color: var(--text-primary) !important;
+}
+
+.Select-menu-outer {
+    background-color: #172010 !important;
+    border: 1px solid var(--card-border) !important;
+}
+
+.Select-option {
+    background-color: #172010 !important;
+    color: var(--text-primary) !important;
+}
+
+.Select-option:hover {
+    background-color: #243318 !important;
+}
+
+/* ── DataTable styling ───────────────────────────── */
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th {
+    background-color: #151d0e !important;
+    color: var(--text-muted) !important;
+    border: 1px solid var(--card-border) !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    padding: 10px !important;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td {
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--card-border) !important;
+    font-size: 0.88rem !important;
+    padding: 8px 10px !important;
+}
+
+/* ── Alert Callouts ──────────────────────────────── */
+.callout-error {
+    background: rgba(212, 70, 50, 0.12);
+    border-left: 3px solid #d44632;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 0.8rem 1.2rem;
+    font-size: 0.88rem;
+    color: #f5a89a;
+    margin-top: 1rem;
+}
+
+.code-container {
+    background-color: #0c1107;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-top: 1rem;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #c9e0a5;
+    overflow-x: auto;
+}
