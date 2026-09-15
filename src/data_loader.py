@@ -8,18 +8,20 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
-_BASE = os.path.join(os.path.dirname(__file__), "..", "..")
+def _find_data_file(*subpaths: str) -> str:
+    candidates = [
+        os.path.join(os.getcwd(), *subpaths),
+        os.path.join(os.path.dirname(__file__), "..", *subpaths),
+        os.path.join(os.path.dirname(__file__), "..", "..", *subpaths),
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return os.path.abspath(c)
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", *subpaths))
 
-INTEGRATED_PATH = os.path.join(
-    _BASE, "Datasets", "Cleaned", "final_integrated_dataset.csv"
-)
-TRANSPORT_RAW_PATH = os.path.join(
-    _BASE, "Datasets", "Raw", "track3_transport_logistics.csv"
-)
-PRICES_RAW_PATH = os.path.join(
-    _BASE, "Datasets", "Raw", "track3_price_and_msp.json"
-)
+INTEGRATED_PATH = _find_data_file("Datasets", "Cleaned", "final_integrated_dataset.csv")
+TRANSPORT_RAW_PATH = _find_data_file("Datasets", "Raw", "track3_transport_logistics.csv")
+PRICES_RAW_PATH = _find_data_file("Datasets", "Raw", "track3_price_and_msp.json")
 
 # ── Numeric columns in the integrated file ────────────────────────────────────
 _NUMERIC_COLS = [
