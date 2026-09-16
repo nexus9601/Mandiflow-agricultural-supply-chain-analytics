@@ -2,13 +2,16 @@
 
 End-to-end agricultural supply chain analytics platform integrating mandi arrivals, crop prices, MSP, weather, and transport data — with an AI-powered natural-language chart generator built on Groq LLaMA 3.3-70B.
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://mandiflow-agricultural-supply-chain-analytics.streamlit.app/)  
+🌐 **Live Dashboard:** [Streamlit](https://mandiflow-agricultural-supply-chain-analytics.streamlit.app/)
+
 ---
 
 ## Stack
 
 | Layer | Technology |
 |---|---|
-| Dashboard | Streamlit ≥ 1.36 |
+| Dashboard | [Streamlit](https://mandiflow-agricultural-supply-chain-analytics.streamlit.app/) ≥ 1.36 |
 | Visualizations | Plotly Express / Graph Objects |
 | AI Agent | Groq API · LLaMA 3.3-70B-Versatile |
 | Data | Pandas ≥ 2.0 · NumPy · OpenPyXL |
