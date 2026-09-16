@@ -8,7 +8,6 @@ streamlit_app/.streamlit/secrets.toml
 
 # ── Archived / Legacy code (kept locally, not deployed) ────────────────────
 _archived_dash_app/
-Agricultural_Supply_Chain_Price_Discovery.ipynb
 
 # ── Python bytecode ─────────────────────────────────────────────────────────
 __pycache__/
