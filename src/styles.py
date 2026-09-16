@@ -86,10 +86,41 @@ html, body, [data-testid="stAppViewContainer"] {
     -webkit-font-smoothing: antialiased;
 }
 
-/* Hide default Streamlit chrome */
-#MainMenu, footer, header { visibility: hidden; }
+/* Hide default Streamlit chrome while preserving sidebar expand/collapse controls */
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
 [data-testid="stDecoration"] { display: none; }
 [data-testid="stHeader"] { background: transparent !important; }
+
+/* Ensure collapsed sidebar toggle control is always visible and easy to click */
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="stHeader"] [data-testid="collapsedControl"],
+[data-testid="stHeader"] button,
+button[data-testid="stSidebarCollapseButton"] {
+    visibility: visible !important;
+    display: flex !important;
+    opacity: 1 !important;
+    z-index: 1000000 !important;
+}
+
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"] {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 9px !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08) !important;
+    margin: 8px 0 0 10px !important;
+    transition: all 0.2s ease !important;
+    color: #059669 !important;
+}
+
+[data-testid="collapsedControl"]:hover,
+[data-testid="stSidebarCollapsedControl"]:hover {
+    border-color: #059669 !important;
+    background: #ecfdf5 !important;
+    transform: scale(1.05) !important;
+}
 
 /* ── Modern Sleek Sidebar ────────────────────────────────────────── */
 [data-testid="stSidebar"] {
@@ -613,6 +644,79 @@ div[data-testid="stHorizontalBlock"] {
     overflow: hidden !important;
     border: 1px solid #e2e8f0 !important;
     box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.03) !important;
+}
+
+/* ── Interactive Chat & Prompt Box Highlight ───────────────────── */
+[data-testid="stForm"] {
+    background: #ffffff !important;
+    border: 2px solid #10b981 !important;
+    border-radius: 14px !important;
+    padding: 1.15rem 1.25rem !important;
+    box-shadow: 0 6px 24px -4px rgba(5, 150, 105, 0.18), 0 2px 8px -1px rgba(15, 23, 42, 0.06) !important;
+    transition: all 0.25s ease !important;
+}
+
+[data-testid="stForm"]:focus-within {
+    border-color: #059669 !important;
+    box-shadow: 0 8px 30px -4px rgba(5, 150, 105, 0.25), 0 0 0 3px rgba(16, 185, 129, 0.22) !important;
+}
+
+[data-testid="stForm"] [data-testid="stTextInput"] input {
+    background: #f8fafc !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 10px !important;
+    font-size: 0.95rem !important;
+    font-family: 'Inter', sans-serif !important;
+    color: #0f172a !important;
+    padding: 0.65rem 1rem !important;
+    transition: all 0.2s ease !important;
+}
+
+[data-testid="stForm"] [data-testid="stTextInput"] input:focus {
+    background: #ffffff !important;
+    border-color: #059669 !important;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15) !important;
+}
+
+[data-testid="stForm"] button[data-testid="baseButton-primaryFormSubmit"],
+[data-testid="stForm"] button[kind="primaryFormSubmit"],
+[data-testid="stForm"] button[kind="primary"] {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid #047857 !important;
+    border-radius: 9px !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 0.9rem !important;
+    box-shadow: 0 3px 10px rgba(5, 150, 105, 0.3) !important;
+    transition: all 0.2s ease !important;
+}
+
+[data-testid="stForm"] button[data-testid="baseButton-primaryFormSubmit"]:hover,
+[data-testid="stForm"] button[kind="primaryFormSubmit"]:hover,
+[data-testid="stForm"] button[kind="primary"]:hover {
+    background: linear-gradient(135deg, #047857 0%, #064e3b 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 5px 15px rgba(5, 150, 105, 0.4) !important;
+}
+
+[data-testid="stForm"] button[data-testid="baseButton-secondaryFormSubmit"],
+[data-testid="stForm"] button[kind="secondaryFormSubmit"] {
+    background: #f8fafc !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 9px !important;
+    color: #475569 !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    transition: all 0.2s ease !important;
+}
+
+[data-testid="stForm"] button[data-testid="baseButton-secondaryFormSubmit"]:hover,
+[data-testid="stForm"] button[kind="secondaryFormSubmit"]:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
 }
 </style>
 """

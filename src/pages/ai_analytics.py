@@ -317,18 +317,49 @@ def render(df: pd.DataFrame) -> None:
             quick_query = "Rainfall vs Arrival Trend"
 
     # ── Chat input ────────────────────────────────────────────────────────────
+    st.markdown("""
+<div style="display: flex; align-items: center; justify-content: space-between; margin: 1.15rem 0 0.45rem 0;">
+  <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.78rem; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.08em; display: flex; align-items: center; gap: 6px;">
+    <span style="color: #059669; font-size: 0.95rem;">💬</span> AI Query & Prompt Box
+  </span>
+  <span style="font-size: 0.72rem; color: #64748b; font-weight: 500;">Press Enter ↵ or click Send</span>
+</div>
+""", unsafe_allow_html=True)
+
     with st.form("ai_chat_form", clear_on_submit=True):
         col_inp, col_btn, col_clr = st.columns([7, 1.2, 1])
         with col_inp:
             user_input = st.text_input(
                 "Query",
-                placeholder="Ask any question or use /new, /followup, /insight ...",
+                placeholder="Ask any question about crop prices, arrivals, delays, or enter /new, /followup, /insight...",
                 label_visibility="collapsed",
             )
         with col_btn:
-            send = st.form_submit_button("Send ↵", use_container_width=True)
+            send = st.form_submit_button("Send ↵", use_container_width=True, type="primary")
         with col_clr:
             clear = st.form_submit_button("Clear", use_container_width=True)
+
+    # ── Command Helper Guide (Always visible below chat box) ───────────────────
+    st.markdown("""
+<div style="margin-top: 0.45rem; margin-bottom: 1.15rem; padding: 0.65rem 1rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.03);">
+  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.80rem;">
+    <span style="font-weight: 700; color: #059669; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 4px;">
+      <span>⚡</span> Commands:
+    </span>
+    <span style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 7px; border-radius: 6px; font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 0.78rem; font-weight: 700; color: #065f46;">/new &lt;query&gt;</span>
+    <span style="color: #64748b; font-size: 0.75rem;">New visual</span>
+    <span style="color: #cbd5e1;">•</span>
+    <span style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 2px 7px; border-radius: 6px; font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 0.78rem; font-weight: 700; color: #166534;">/followup &lt;changes&gt;</span>
+    <span style="color: #64748b; font-size: 0.75rem;">Modify visual</span>
+    <span style="color: #cbd5e1;">•</span>
+    <span style="background: #fffbeb; border: 1px solid #fde68a; padding: 2px 7px; border-radius: 6px; font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 0.78rem; font-weight: 700; color: #92400e;">/insight [prompt]</span>
+    <span style="color: #64748b; font-size: 0.75rem;">Strategic insight</span>
+  </div>
+  <div style="font-size: 0.73rem; color: #64748b; font-weight: 500;">
+    Plain language queries also work directly
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
     if quick_query:
         _handle_query(quick_query, df, client, api_key)
@@ -351,11 +382,6 @@ def render(df: pd.DataFrame) -> None:
   <p style="font-size:0.88rem; color:#64748b; max-width: 500px; margin: 0 auto; line-height: 1.5;">
     Query wholesale prices, inflow volumes, weather correlations, or corridor transit bottlenecks in plain English.
   </p>
-  <div style="margin-top: 1.2rem; display: inline-flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
-    <span style="background:#f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 0.74rem; font-weight: 600; color: #475569;">/new &lt;query&gt;</span>
-    <span style="background:#f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 0.74rem; font-weight: 600; color: #475569;">/followup &lt;changes&gt;</span>
-    <span style="background:#f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 0.74rem; font-weight: 600; color: #475569;">/insight [question]</span>
-  </div>
 </div>
 """, unsafe_allow_html=True)
         return
