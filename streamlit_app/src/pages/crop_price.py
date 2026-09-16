@@ -40,8 +40,14 @@ def render(df: pd.DataFrame, prices_df: pd.DataFrame, filters: dict) -> None:
     st.markdown(styles.section_header("Price vs MSP Analysis"), unsafe_allow_html=True)
     c_l, c_r = st.columns(2)
     with c_l:
+        st.markdown(
+            "<p style='font-family:\"Plus Jakarta Sans\",sans-serif; font-size:0.84rem; "
+            "font-weight:700; color:#0f172a; margin:0 0 4px 2px; letter-spacing:-0.01em;'>"
+            "Average Modal Price vs MSP by Crop</p>",
+            unsafe_allow_html=True,
+        )
         st.plotly_chart(charts.create_price_vs_msp_grouped(df),
-                        width='stretch', config={"displayModeBar": False})
+                        use_container_width=True, config={"displayModeBar": False})
     with c_r:
         st.plotly_chart(charts.create_msp_gap_chart(df),
                         width='stretch', config={"displayModeBar": False})

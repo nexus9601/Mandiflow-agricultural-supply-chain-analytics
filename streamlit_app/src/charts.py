@@ -143,7 +143,9 @@ def create_top_mandis(df: pd.DataFrame, top_n: int = 10) -> go.Figure:
 
 
 def create_price_vs_msp_grouped(df: pd.DataFrame) -> go.Figure:
-    """Grouped bar – Average Modal Price vs MSP by crop with rounded corners."""
+    """Grouped bar – Average Modal Price vs MSP by crop.
+    NOTE: No internal title – callers must render the title via st.markdown.
+    """
     needed = {"crop_name", "modal_price", "msp"}
     if df.empty or not needed.issubset(df.columns):
         return _empty_fig("Price vs MSP data unavailable.")
@@ -169,22 +171,25 @@ def create_price_vs_msp_grouped(df: pd.DataFrame) -> go.Figure:
         marker=dict(color=COLORS["accent"], cornerradius=4),
         hovertemplate="<b>%{x}</b><br>MSP: ₹%{y:,.0f}<extra></extra>",
     ))
+    # No internal title – caller renders it above the chart
     fig.update_layout(barmode="group", bargap=0.28, bargroupgap=0.08)
-    fig = _apply_theme(fig, "Average Modal Price vs MSP by Crop", height=400)
+    fig = _apply_theme(fig, "", height=360)   # empty title
     fig.update_layout(
-        margin=dict(l=16, r=16, t=56, b=60),
+        margin=dict(l=16, r=16, t=8, b=16),  # tight – no title space needed
         xaxis_title="Crop",
-        yaxis_title="Price (\u20b9/Qtl)",
+        yaxis_title="Price (₹/Qtl)",
         legend=dict(
-            orientation="h",
+            orientation="v",       # vertical stack – no horizontal overflow
             yanchor="top",
-            y=-0.20,
-            xanchor="center",
-            x=0.5,
-            bgcolor="rgba(248,250,252,0.9)",
+            y=0.99,
+            xanchor="right",
+            x=0.99,
+            bgcolor="rgba(255,255,255,0.88)",
             bordercolor="#e2e8f0",
             borderwidth=1,
             font=dict(size=11, color="#475569"),
+            itemsizing="constant",
+            tracegroupgap=4,
         ),
     )
     return fig

@@ -54,6 +54,12 @@ def render(df: pd.DataFrame, transport_df: pd.DataFrame, prices_df: pd.DataFrame
         st.plotly_chart(charts.create_top_mandis(df), use_container_width=True, config={"displayModeBar": False})
 
     with col_r:
+        st.markdown(
+            "<p style='font-family:\"Plus Jakarta Sans\",sans-serif; font-size:0.84rem; "
+            "font-weight:700; color:#0f172a; margin:0 0 4px 2px; letter-spacing:-0.01em;'>"
+            "Average Modal Price vs MSP by Crop</p>",
+            unsafe_allow_html=True,
+        )
         st.plotly_chart(charts.create_price_vs_msp_grouped(df), use_container_width=True, config={"displayModeBar": False})
 
     # ── Key Insights ─────────────────────────────────────────────────────────
