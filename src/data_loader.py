@@ -93,6 +93,18 @@ def load_main_df() -> pd.DataFrame:
             df[col] = df[col].astype(str).str.strip().str.title()
             df.loc[df[col].isin(["Nan", "None", ""]), col] = np.nan
 
+    # Harmonize multilingual crop names (e.g. Chawal/चावल -> Rice, Makka/मक्का -> Maize)
+    if "crop_name" in df.columns:
+        crop_clean_map = {
+            "Chawal": "Rice",
+            "चावल": "Rice",
+            "Makka": "Maize",
+            "Makki": "Maize",
+            "मक्का": "Maize",
+            "Sarso": "Mustard",
+        }
+        df["crop_name"] = df["crop_name"].replace(crop_clean_map)
+
     return df
 
 
@@ -188,6 +200,15 @@ def load_prices_df() -> pd.DataFrame:
     for col in ["crop_name"]:
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip().str.title()
+            crop_clean_map = {
+                "Chawal": "Rice",
+                "चावल": "Rice",
+                "Makka": "Maize",
+                "Makki": "Maize",
+                "मक्का": "Maize",
+                "Sarso": "Mustard",
+            }
+            df[col] = df[col].replace(crop_clean_map)
 
     return df
 

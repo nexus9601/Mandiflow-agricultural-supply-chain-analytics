@@ -229,12 +229,26 @@ def render(df: pd.DataFrame) -> None:
     # ── Command hint pills ─────────────────────────────────────────────────
     st.markdown("""
 <div style="display:flex;gap:8px;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;">
-  <span style="font-size:0.8rem;color:#6b7280;font-weight:600;">Commands:</span>
-  <code style="background:#e8f5e9;color:#1a6b3c;border-radius:6px;padding:2px 8px;font-size:0.78rem;">/new &lt;query&gt;</code>
-  <code style="background:#e3f0fb;color:#2563eb;border-radius:6px;padding:2px 8px;font-size:0.78rem;">/followup &lt;changes&gt;</code>
-  <code style="background:#fef9c3;color:#92400e;border-radius:6px;padding:2px 8px;font-size:0.78rem;">/insight [question]</code>
+  <span style="font-size:0.75rem;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Supported Commands:</span>
+  <code style="background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">/new &lt;query&gt;</code>
+  <code style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">/followup &lt;changes&gt;</code>
+  <code style="background:#fefce8;color:#a16207;border:1px solid #fef08a;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">/insight [question]</code>
 </div>
 """, unsafe_allow_html=True)
+
+    # ── Quick Prompts ──────────────────────────────────────────────────────
+    st.markdown("<div style='font-size:0.72rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin-bottom: 0.35rem;'>Quick Sample Prompts (Click to execute):</div>", unsafe_allow_html=True)
+    p_col1, p_col2, p_col3 = st.columns(3)
+    quick_query = None
+    with p_col1:
+        if st.button("📊 Top 5 Crops by Inflow", key="quick_p1", use_container_width=True):
+            quick_query = "Plot the top 5 crops by total arrival quantity as a horizontal bar chart."
+    with p_col2:
+        if st.button("⚖️ Price vs MSP Gap by Crop", key="quick_p2", use_container_width=True):
+            quick_query = "Create a bar chart showing the difference between modal price and MSP for each crop."
+    with p_col3:
+        if st.button("🌧️ Rainfall vs Arrival Trend", key="quick_p3", use_container_width=True):
+            quick_query = "Show a scatter plot of total rainfall vs arrival quantity with a trendline."
 
     # ── Chat input ─────────────────────────────────────────────────────────
     with st.form("ai_chat_form", clear_on_submit=True):
@@ -249,6 +263,9 @@ def render(df: pd.DataFrame) -> None:
             send = st.form_submit_button("Send ↵", use_container_width=True)
         with col_clr:
             clear = st.form_submit_button("Clear", use_container_width=True)
+
+    if quick_query:
+        _process_query(quick_query, df, client, api_key)
 
     # Handle clear
     if clear:

@@ -23,14 +23,14 @@ def render(df: pd.DataFrame, daily_df: pd.DataFrame) -> None:
     corr_val = kpis["rain_arrival_corr"]
     corr_str = f"{corr_val:.3f}" if not np.isnan(corr_val) else "—"
     kpi_data = [
-        (c1, "Avg Temperature",            f"{kpis['avg_temp']:.1f} °C" if not np.isnan(kpis['avg_temp']) else "—", "default"),
-        (c2, "Total Rainfall",             f"{kpis['total_rainfall']:.0f} mm" if not np.isnan(kpis['total_rainfall']) else "—", "default"),
-        (c3, "Avg Humidity",               f"{kpis['avg_humidity']:.1f}%" if not np.isnan(kpis['avg_humidity']) else "—", "default"),
-        (c4, "Rainfall–Arrival Correlation", corr_str, "default"),
+        (c1, "Avg Temperature",             f"{kpis['avg_temp']:.1f} °C" if not np.isnan(kpis['avg_temp']) else "—", "amber",   "🌡️", "Daily Mean"),
+        (c2, "Total Rainfall",              f"{kpis['total_rainfall']:.0f} mm" if not np.isnan(kpis['total_rainfall']) else "—", "sky",     "🌧️", "Precipitation"),
+        (c3, "Avg Humidity",                f"{kpis['avg_humidity']:.1f}%" if not np.isnan(kpis['avg_humidity']) else "—", "sky",     "💧", "Relative Moisture"),
+        (c4, "Rain–Arrival Correlation",     corr_str, "emerald", "📈", "Pearson r Stat"),
     ]
-    for col, label, val, variant in kpi_data:
+    for col, label, val, variant, icon, delta in kpi_data:
         with col:
-            st.markdown(styles.kpi_card(label, val, variant), unsafe_allow_html=True)
+            st.markdown(styles.kpi_card(label, val, variant=variant, icon=icon, delta=delta), unsafe_allow_html=True)
 
     st.info(
         "Correlation indicates statistical association, not causation. "

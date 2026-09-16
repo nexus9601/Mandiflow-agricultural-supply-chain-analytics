@@ -25,10 +25,10 @@ def _apply_theme(fig: go.Figure, title: str = "", height: int = 380) -> go.Figur
         height=height,
         title=dict(
             text=title,
-            font=dict(size=13, color=COLORS["text"], weight=700),
+            font=dict(size=14, color="#0f172a", family="'Plus Jakarta Sans', sans-serif", weight=700),
             x=0,
             xanchor="left",
-            pad=dict(l=4),
+            pad=dict(l=4, b=10),
         ),
         xaxis=dict(**AXIS_STYLE),
         yaxis=dict(**AXIS_STYLE),
@@ -39,7 +39,7 @@ def _apply_theme(fig: go.Figure, title: str = "", height: int = 380) -> go.Figur
 # ── Overview Charts ───────────────────────────────────────────────────────────
 
 def create_arrival_trend(df: pd.DataFrame, crop: str = "All") -> go.Figure:
-    """Daily crop arrival trend line chart."""
+    """Daily crop arrival trend line chart with smooth spline curve."""
     if df.empty or "date" not in df.columns:
         return _empty_fig("No arrival data available.")
 
@@ -51,8 +51,8 @@ def create_arrival_trend(df: pd.DataFrame, crop: str = "All") -> go.Figure:
         x=grp["date"], y=grp["arrivals"],
         mode="lines",
         fill="tozeroy",
-        fillcolor=f"rgba(26,107,60,0.10)",
-        line=dict(color=COLORS["primary"], width=2),
+        fillcolor="rgba(16, 185, 129, 0.08)",
+        line=dict(color=COLORS["primary"], width=2.5, shape="spline", smoothing=1.1),
         name="Arrivals",
         hovertemplate="<b>%{x|%d %b %Y}</b><br>Arrivals: %{y:,.0f} Qtl<extra></extra>",
     ))
@@ -68,7 +68,7 @@ def create_arrival_trend(df: pd.DataFrame, crop: str = "All") -> go.Figure:
 
 
 def create_crop_distribution(df: pd.DataFrame, top_n: int = 15) -> go.Figure:
-    """Horizontal bar – crop-wise arrival distribution."""
+    """Horizontal bar – crop-wise arrival distribution with ample label headroom."""
     if df.empty or "crop_name" not in df.columns:
         return _empty_fig("No crop data available.")
 
@@ -92,15 +92,21 @@ def create_crop_distribution(df: pd.DataFrame, top_n: int = 15) -> go.Figure:
     fig.update_traces(
         texttemplate="%{x:,.0f}",
         textposition="outside",
-        textfont_size=10,
+        cliponaxis=False,
+        marker=dict(cornerradius=4),
+        textfont=dict(size=11, family="'Inter', sans-serif", color="#334155"),
     )
     fig = _apply_theme(fig, "Crop-wise Arrival Distribution", height=400)
-    fig.update_layout(xaxis_title="Total Arrivals (Qtl)", yaxis_title="")
+    max_val = grp["Arrivals"].max() if not grp.empty else 100
+    fig.update_layout(
+        xaxis=dict(**AXIS_STYLE, title="Total Arrivals (Qtl)", range=[0, max_val * 1.20]),
+        yaxis=dict(**AXIS_STYLE, title=""),
+    )
     return fig
 
 
 def create_top_mandis(df: pd.DataFrame, top_n: int = 10) -> go.Figure:
-    """Horizontal bar – top mandis by arrival volume."""
+    """Horizontal bar – top mandis by arrival volume with label headroom."""
     if df.empty or "mandi_name" not in df.columns:
         return _empty_fig("No mandi data available.")
 
@@ -117,19 +123,29 @@ def create_top_mandis(df: pd.DataFrame, top_n: int = 10) -> go.Figure:
     fig = px.bar(
         grp, x="Arrivals", y="Mandi",
         orientation="h",
-        color_discrete_sequence=[COLORS["secondary"]],
+        color_discrete_sequence=["#10b981"],
         labels={"Arrivals": "Total Arrivals (Qtl)", "Mandi": ""},
+        text="Arrivals",
     )
     fig.update_traces(
+        texttemplate="%{x:,.0f}",
+        textposition="outside",
+        cliponaxis=False,
+        marker=dict(cornerradius=4),
+        textfont=dict(size=11, family="'Inter', sans-serif", color="#334155"),
         hovertemplate="<b>%{y}</b><br>%{x:,.0f} Qtl<extra></extra>",
     )
     fig = _apply_theme(fig, f"Top {top_n} Mandis by Arrival Volume", height=400)
-    fig.update_layout(xaxis_title="Total Arrivals (Qtl)", yaxis_title="")
+    max_val = grp["Arrivals"].max() if not grp.empty else 100
+    fig.update_layout(
+        xaxis=dict(**AXIS_STYLE, title="Total Arrivals (Qtl)", range=[0, max_val * 1.20]),
+        yaxis=dict(**AXIS_STYLE, title=""),
+    )
     return fig
 
 
 def create_price_vs_msp_grouped(df: pd.DataFrame) -> go.Figure:
-    """Grouped bar – Average Modal Price vs MSP by crop."""
+    """Grouped bar – Average Modal Price vs MSP by crop with rounded corners."""
     needed = {"crop_name", "modal_price", "msp"}
     if df.empty or not needed.issubset(df.columns):
         return _empty_fig("Price vs MSP data unavailable.")
@@ -146,21 +162,30 @@ def create_price_vs_msp_grouped(df: pd.DataFrame) -> go.Figure:
     fig.add_trace(go.Bar(
         name="Avg Modal Price",
         x=grp["crop_name"], y=grp["modal_price"],
-        marker_color=COLORS["primary"],
+        marker=dict(color=COLORS["primary"], cornerradius=4),
         hovertemplate="<b>%{x}</b><br>Modal Price: ₹%{y:,.0f}<extra></extra>",
     ))
     fig.add_trace(go.Bar(
         name="Avg MSP",
         x=grp["crop_name"], y=grp["msp"],
-        marker_color=COLORS["accent"],
+        marker=dict(color=COLORS["accent"], cornerradius=4),
         hovertemplate="<b>%{x}</b><br>MSP: ₹%{y:,.0f}<extra></extra>",
     ))
-    fig.update_layout(barmode="group")
+    fig.update_layout(barmode="group", bargap=0.25, bargroupgap=0.1)
     fig = _apply_theme(fig, "Average Modal Price vs MSP by Crop", height=380)
     fig.update_layout(
         xaxis_title="Crop",
         yaxis_title="Price (₹/Qtl)",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            bgcolor="rgba(255,255,255,0.85)",
+            bordercolor="#e2e8f0",
+            borderwidth=1,
+        ),
     )
     return fig
 
@@ -244,12 +269,21 @@ def create_msp_gap_chart(df: pd.DataFrame) -> go.Figure:
     fig = go.Figure(go.Bar(
         x=grp["MSP Gap"], y=grp["Crop"],
         orientation="h",
-        marker_color=grp["Color"],
+        marker=dict(color=grp["Color"], cornerradius=4),
+        text=grp["MSP Gap"].apply(lambda v: f"₹{v:+,.0f}"),
+        textposition="outside",
+        cliponaxis=False,
+        textfont=dict(size=10, family="'Inter', sans-serif"),
         hovertemplate="<b>%{y}</b><br>MSP Gap: ₹%{x:,.0f}<extra></extra>",
     ))
     fig.add_vline(x=0, line_dash="dash", line_color=COLORS["neutral"], line_width=1.5)
     fig = _apply_theme(fig, "Average MSP Gap by Crop (Modal Price − MSP)", height=380)
-    fig.update_layout(xaxis_title="MSP Gap (₹/Qtl)  |  + Above MSP  |  − Below MSP", yaxis_title="")
+    min_x = min(grp["MSP Gap"].min() * 1.25, -100) if not grp.empty else -100
+    max_x = max(grp["MSP Gap"].max() * 1.25, 100) if not grp.empty else 100
+    fig.update_layout(
+        xaxis=dict(**AXIS_STYLE, title="MSP Gap (₹/Qtl)  |  + Above MSP  |  − Below MSP", range=[min_x, max_x]),
+        yaxis=dict(**AXIS_STYLE, title=""),
+    )
     return fig
 
 
@@ -275,15 +309,23 @@ def create_price_crash_rate(df: pd.DataFrame) -> go.Figure:
 
     fig = px.bar(
         grp, x="Crop", y="Crash Rate %",
-        color_discrete_sequence=[COLORS["danger"]],
-        labels={"Crash Rate %": "Price Crash Rate (%)", "Crop": "Crop"},
+        text="Crash Rate %",
     )
     fig.update_traces(
-        marker_color=colors,
+        marker=dict(color=colors, cornerradius=4),
+        texttemplate="%{y:.1f}%",
+        textposition="outside",
+        cliponaxis=False,
+        textfont=dict(size=11, family="'Inter', sans-serif"),
         hovertemplate="<b>%{x}</b><br>Crash Rate: %{y:.1f}%<extra></extra>",
     )
-    fig = _apply_theme(fig, "Price Crash Rate by Crop (Modal Price < MSP)", height=340)
-    fig.update_layout(xaxis_title="Crop", yaxis_title="Price Crash Rate (%)")
+    fig = _apply_theme(fig, "Price Crash Rate by Crop (Modal Price < MSP)", height=350)
+    max_rate = grp["Crash Rate %"].max() if not grp.empty else 100
+    fig.update_layout(
+        xaxis_title="Crop",
+        yaxis=dict(**AXIS_STYLE, title="Price Crash Rate (%)", range=[0, max(max_rate * 1.22, 20)]),
+        showlegend=False,
+    )
     return fig
 
 

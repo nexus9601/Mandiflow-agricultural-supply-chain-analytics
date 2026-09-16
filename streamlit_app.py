@@ -53,19 +53,26 @@ main_df, transport_df, prices_df, daily_weather = _load_all()
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    # Brand
+    # Brand Header
     st.markdown(
         """
-<div class="sidebar-brand">
-  <div class="sidebar-brand-name">MandiFlow</div>
-  <div class="sidebar-brand-sub">Agricultural Supply Chain Analytics</div>
+<div class="sidebar-brand-box">
+  <div class="sidebar-logo-icon">🌾</div>
+  <div>
+    <div class="sidebar-brand-title">MandiFlow</div>
+    <div class="sidebar-brand-subtitle">Agricultural Supply Chain</div>
+    <div class="sidebar-status-pill">
+      <span class="sidebar-status-dot"></span>
+      <span>v2.2 Live Analytics</span>
+    </div>
+  </div>
 </div>
 """,
         unsafe_allow_html=True,
     )
 
     # Navigation
-    st.markdown("### Navigation")
+    st.markdown('<div class="sidebar-section-title">Navigation</div>', unsafe_allow_html=True)
     page = st.radio(
         "Page",
         options=["Overview", "Mandi Analysis", "Crop & Price", "Transport", "Weather Impact", "Data Quality", "AI Analytics ✨"],
@@ -73,10 +80,10 @@ with st.sidebar:
         key="nav_page",
     )
 
-    st.markdown("---")
+    st.markdown("<hr style='border:none;border-top:1px solid #e2e8f0;margin:1rem 0;'>", unsafe_allow_html=True)
 
     # ── Global Filters ─────────────────────────────────────────────────────
-    st.markdown("### Filters")
+    st.markdown('<div class="sidebar-section-title">Global Filters</div>', unsafe_allow_html=True)
 
     # Date range
     date_col = "date"
@@ -103,11 +110,11 @@ with st.sidebar:
 
     # Crop
     crop_opts = ["All"] + sorted(main_df["crop_name"].dropna().unique().tolist()) if "crop_name" in main_df.columns else ["All"]
-    sel_crop = st.selectbox("Crop", crop_opts, key="filter_crop")
+    sel_crop = st.selectbox("Commodity / Crop", crop_opts, key="filter_crop")
 
     # District
     dist_opts = ["All"] + sorted(main_df["district"].dropna().unique().tolist()) if "district" in main_df.columns else ["All"]
-    sel_district = st.selectbox("District", dist_opts, key="filter_district")
+    sel_district = st.selectbox("Catchment District", dist_opts, key="filter_district")
 
     # Mandi (depends on district)
     if sel_district != "All" and "district" in main_df.columns:
@@ -115,18 +122,18 @@ with st.sidebar:
     else:
         _mandi_pool = main_df["mandi_name"].dropna().unique() if "mandi_name" in main_df.columns else []
     mandi_opts = ["All"] + sorted(_mandi_pool.tolist())
-    sel_mandi = st.selectbox("Mandi", mandi_opts, key="filter_mandi")
+    sel_mandi = st.selectbox("Trading Mandi", mandi_opts, key="filter_mandi")
 
     # Warehouse (transport only)
     if not transport_df.empty and "warehouse" in transport_df.columns:
         wh_opts = ["All"] + sorted(transport_df["warehouse"].dropna().unique().tolist())
     else:
         wh_opts = ["All"]
-    sel_warehouse = st.selectbox("Warehouse", wh_opts, key="filter_warehouse")
+    sel_warehouse = st.selectbox("Logistics Warehouse", wh_opts, key="filter_warehouse")
 
     # Reset button
-    st.markdown("")
-    if st.button("Reset Filters", key="reset_filters"):
+    st.markdown("<div style='margin-top:0.4rem;'></div>", unsafe_allow_html=True)
+    if st.button("↺ Reset All Filters", key="reset_filters", use_container_width=True):
         st.session_state.update({
             "filter_crop": "All",
             "filter_district": "All",
@@ -135,12 +142,17 @@ with st.sidebar:
         })
         st.rerun()
 
-    st.markdown("---")
+    st.markdown("<hr style='border:none;border-top:1px solid #e2e8f0;margin:1rem 0;'>", unsafe_allow_html=True)
     st.markdown(
-        "<div style='font-size:0.72rem;color:#6b7280;'>"
-        "Data last processed from project pipeline.<br>"
-        f"Records: {len(main_df):,}"
-        "</div>",
+        f"""
+<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
+  <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px;">Active Pipeline</div>
+  <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.15rem; font-weight: 800; color: #064e3b; line-height: 1.1;">
+    {len(main_df):,} <span style="font-size: 0.72rem; font-weight: 600; color: #64748b;">Records</span>
+  </div>
+  <div style="font-size: 0.7rem; color: #059669; font-weight: 600; margin-top: 3px;">● Cleaned & Harmonized</div>
+</div>
+""",
         unsafe_allow_html=True,
     )
 
