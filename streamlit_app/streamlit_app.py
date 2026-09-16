@@ -73,7 +73,7 @@ with st.sidebar:
         key="nav_page",
     )
 
-    st.markdown("<hr style='border:none;border-top:1px solid #e2e8f0;margin:1rem 0;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='border:none;border-top:1px solid rgba(255,255,255,0.08);margin:1rem 0;'>", unsafe_allow_html=True)
 
     # ── Global Filters ─────────────────────────────────────────────────────
     st.markdown('<div class="sidebar-section-title">Global Filters</div>', unsafe_allow_html=True)
@@ -135,15 +135,15 @@ with st.sidebar:
         })
         st.rerun()
 
-    st.markdown("<hr style='border:none;border-top:1px solid #e2e8f0;margin:1rem 0;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='border:none;border-top:1px solid rgba(255,255,255,0.08);margin:1rem 0;'>", unsafe_allow_html=True)
     st.markdown(
         f"""
-<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;">
-  <div style="font-size: 0.68rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">Dataset</div>
-  <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem; font-weight: 700; color: #0f172a;">
-    {len(main_df):,} <span style="font-size: 0.72rem; font-weight: 500; color: #64748b;">records</span>
+<div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 12px;">
+  <div style="font-size: 0.62rem; font-weight: 700; color: #6ee7b7; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; opacity:0.8;">Dataset</div>
+  <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.05rem; font-weight: 800; color: #ffffff;">
+    {len(main_df):,} <span style="font-size: 0.72rem; font-weight: 500; color: #94a3b8;">records</span>
   </div>
-  <div style="font-size: 0.68rem; color: #166534; font-weight: 600; margin-top: 2px;">● Validated & Harmonized</div>
+  <div style="font-size: 0.67rem; color: #86efac; font-weight: 600; margin-top: 3px;">&#9679; Validated &amp; Harmonized</div>
 </div>
 """,
         unsafe_allow_html=True,
