@@ -84,7 +84,7 @@ with st.sidebar:
         is_active = st.session_state["nav_page"] == label
         btn_class = "nav-btn nav-btn-active" if is_active else "nav-btn"
         st.markdown(f'<div class="{btn_class}">{icon}&nbsp;&nbsp;{label}</div>', unsafe_allow_html=True)
-        if st.button(label, key=f"nav_{label}", use_container_width=True, label_visibility="collapsed"):
+        if st.button(label, key=f"nav_{label}", use_container_width=True):
             st.session_state["nav_page"] = label
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
