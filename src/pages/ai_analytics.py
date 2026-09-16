@@ -485,6 +485,120 @@ def _handle_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
         return
 
     # Live Groq API Execution
+INSIGHT_SYSTEM_PROMPT = """You are MandiFlow Intelligence, an executive agricultural supply chain economist and commodities market analyst.
+You are provided with the exact chart query and the real-world aggregated numbers, market volumes, prices, and distributions plotted on the user's dashboard.
+
+STRICT OPERATIONAL RULES:
+1. NEVER discuss Python code, pandas, scripts, programming environments, or tell the user to "run code" or "inspect df". The user is an executive viewing a dashboard.
+2. NEVER say "without seeing the actual data" or "I cannot see the DataFrame". You have the exact plotted data points and numbers right in front of you.
+3. Treat the data as live, verified wholesale market intelligence from Indian agricultural mandis.
+4. Provide structured, executive-ready analytical commentary with the following 3 sections using clear markdown:
+   - **Executive Headline**: A direct, 1-2 sentence market takeaway summarizing the primary pattern or dominant leader.
+   - **Key Quantified Observations**: 3 bullet points citing the specific numbers, percentage spreads, volumes, or price variations from the plotted data.
+   - **Strategic Supply Chain Implications**: 1-2 actionable insights for procurement logistics, storage planning, MSP floor defense, or transit management.
+"""
+
+
+def _summarize_visual_data(visual: dict) -> str:
+    """Extract human-readable data points, categories, and metrics from Plotly fig_dict."""
+    if not visual:
+        return "No visual data available."
+    fig_dict = visual.get("fig_dict", {})
+    traces = fig_dict.get("data", [])
+    layout = fig_dict.get("layout", {})
+
+    lines = []
+    # Title
+    t_obj = layout.get("title", "")
+    t_text = t_obj.get("text", "") if isinstance(t_obj, dict) else str(t_obj or "")
+    if t_text:
+        clean_title = re.sub(r"<[^>]+>", "", t_text).strip()
+        lines.append(f"Chart Title: {clean_title}")
+
+    # Axes
+    x_axis = layout.get("xaxis", {}).get("title", {}).get("text", "")
+    y_axis = layout.get("yaxis", {}).get("title", {}).get("text", "")
+    if x_axis or y_axis:
+        lines.append(f"Axes: X={x_axis or 'Dimension'}, Y={y_axis or 'Metric'}")
+
+    for idx, trace in enumerate(traces):
+        name = trace.get("name") or f"Series {idx + 1}"
+        x = trace.get("x")
+        y = trace.get("y")
+        labels = trace.get("labels")
+        values = trace.get("values")
+
+        if labels is not None and values is not None:
+            pairs = [
+                f"{str(l)}: {v:,.2f}" if isinstance(v, float) else f"{str(l)}: {v:,}" if isinstance(v, int) else f"{str(l)}: {v}"
+                for l, v in zip(list(labels)[:15], list(values)[:15])
+            ]
+            lines.append(f"Plotted Data ({name}): " + "; ".join(pairs))
+        elif x is not None and y is not None:
+            pairs = []
+            for xi, yi in zip(list(x)[:15], list(y)[:15]):
+                y_str = f"{yi:,.2f}" if isinstance(yi, float) else f"{yi:,}" if isinstance(yi, int) else str(yi)
+                x_str = f"{xi:,.2f}" if isinstance(xi, float) else f"{xi:,}" if isinstance(xi, int) else str(xi)
+                pairs.append(f"{x_str}: {y_str}")
+            lines.append(f"Plotted Values ({name}): " + "; ".join(pairs))
+
+    return "\n".join(lines) if lines else "Plotted Data: Values extracted from visual."
+
+
+def _generate_insight_content(last_visual: dict, client, model: str, user_question: str = "") -> str:
+    """Generate executive agricultural market intelligence from actual plotted chart data."""
+    data_summary = _summarize_visual_data(last_visual)
+    query_context = last_visual.get("query", "Market Analysis")
+
+    user_prompt = f"""Chart Subject / Query: {query_context}
+{data_summary}
+"""
+    if user_question and user_question.strip().lower() not in ("/insight", "/insights", "insight"):
+        user_prompt += f"\nUser Question: {user_question.strip()}\n"
+    user_prompt += "\nAnalyze the exact figures above and provide executive market intelligence and strategic supply chain implications."
+
+    resp = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": INSIGHT_SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.2,
+        max_tokens=900,
+    )
+    return resp.choices[0].message.content.strip()
+
+
+def _handle_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
+    """Intelligently route query to live Groq LLM or Built-in Analytics Engine."""
+    history = st.session_state.ai_history
+    history.append({"role": "user", "text": query})
+
+    command, payload = _parse_command(query)
+
+    # If no API key is provided, handle with built-in instant demo engine
+    if not api_key:
+        fig, code, insight = _run_demo_query(payload or query, df)
+        history.append({
+            "role": "assistant",
+            "fig_dict": fig.to_dict(),
+            "code": code,
+            "query": payload,
+            "model": "MandiFlow Instant Analytics Engine",
+            "is_followup": False,
+        })
+        if command == "insight" or "insight" in query.lower():
+            history.append({
+                "role": "insight",
+                "markdown": insight,
+                "model": "MandiFlow Intelligence",
+                "query": query,
+            })
+        st.session_state.ai_history = history
+        st.rerun()
+        return
+
+    # Live Groq API Execution
     model = _resolve_model(client)
     generated_code = ""
 
@@ -498,24 +612,26 @@ def _handle_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
                     "text": "Generate a chart first, then ask for /insight.",
                 })
             else:
-                prompt = f"Analyze this agricultural chart code and query:\nQuery: {last_visual.get('query')}\nCode: {last_visual.get('code')}\nProvide 3 succinct takeaways."
-                resp = client.chat.completions.create(
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.3, max_tokens=1200,
-                )
+                insight_text = _generate_insight_content(last_visual, client, model, payload)
                 history.append({
                     "role": "insight",
-                    "markdown": resp.choices[0].message.content.strip(),
+                    "markdown": insight_text,
                     "model": model,
                     "query": query,
                 })
         else:
+            prev_context = ""
+            if command == "followup":
+                last_visual = _get_last_visual()
+                if last_visual:
+                    prev_context = f"\nPrevious chart query: '{last_visual.get('query')}'.\nPrevious code:\n```python\n{last_visual.get('code')}\n```\n"
+
+            user_msg = f"{prev_context}Generate chart code for: {payload}" if prev_context else payload
             resp = client.chat.completions.create(
                 model=model,
                 messages=[
                     {"role": "system", "content": _system_prompt(df)},
-                    {"role": "user", "content": payload},
+                    {"role": "user", "content": user_msg},
                 ],
                 temperature=0.1, max_tokens=1200,
             )
@@ -542,12 +658,17 @@ def _handle_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
 
 def _trigger_insight(visual_idx: int, df: pd.DataFrame, client, api_key: str) -> None:
     history = st.session_state.ai_history
-    last_visual = _get_last_visual()
-    if not last_visual:
+    target_visual = None
+    if 0 <= visual_idx < len(history) and history[visual_idx].get("fig_dict"):
+        target_visual = history[visual_idx]
+    else:
+        target_visual = _get_last_visual()
+
+    if not target_visual:
         return
-    
+
     if not api_key:
-        _, _, insight = _run_demo_query(last_visual.get("query", ""), df)
+        _, _, insight = _run_demo_query(target_visual.get("query", ""), df)
         history.append({
             "role": "insight",
             "markdown": insight,
@@ -560,12 +681,13 @@ def _trigger_insight(visual_idx: int, df: pd.DataFrame, client, api_key: str) ->
 
     model = _resolve_model(client)
     try:
-        resp = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": f"Analyze this chart:\nCode: {last_visual.get('code')}\nQuery: {last_visual.get('query')}"}],
-            temperature=0.3, max_tokens=1200,
-        )
-        history.append({"role": "insight", "markdown": resp.choices[0].message.content.strip(), "model": model, "query": "/insight"})
+        insight_text = _generate_insight_content(target_visual, client, model)
+        history.append({
+            "role": "insight",
+            "markdown": insight_text,
+            "model": model,
+            "query": "/insight",
+        })
     except Exception as exc:
         history.append({"role": "error", "title": "Insight Error", "text": str(exc)})
 
