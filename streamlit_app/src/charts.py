@@ -169,20 +169,22 @@ def create_price_vs_msp_grouped(df: pd.DataFrame) -> go.Figure:
         marker=dict(color=COLORS["accent"], cornerradius=4),
         hovertemplate="<b>%{x}</b><br>MSP: ₹%{y:,.0f}<extra></extra>",
     ))
-    fig.update_layout(barmode="group", bargap=0.25, bargroupgap=0.1)
-    fig = _apply_theme(fig, "Average Modal Price vs MSP by Crop", height=380)
+    fig.update_layout(barmode="group", bargap=0.28, bargroupgap=0.08)
+    fig = _apply_theme(fig, "Average Modal Price vs MSP by Crop", height=400)
     fig.update_layout(
+        margin=dict(l=16, r=16, t=56, b=60),
         xaxis_title="Crop",
-        yaxis_title="Price (₹/Qtl)",
+        yaxis_title="Price (\u20b9/Qtl)",
         legend=dict(
             orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1,
-            bgcolor="rgba(255,255,255,0.85)",
+            yanchor="top",
+            y=-0.20,
+            xanchor="center",
+            x=0.5,
+            bgcolor="rgba(248,250,252,0.9)",
             bordercolor="#e2e8f0",
             borderwidth=1,
+            font=dict(size=11, color="#475569"),
         ),
     )
     return fig
