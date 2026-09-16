@@ -64,10 +64,23 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # Navigation – custom button-based nav for full CSS control on dark bg
-    st.markdown('<div class="sidebar-section-title">Navigation</div>', unsafe_allow_html=True)
-
-    NAV_PAGES = [
+    # Navigation – Categorized, high-contrast native buttons
+    NAV_SECTIONS = [
+        ("Core Analytics", [
+            ("🏠", "Overview"),
+            ("📊", "Mandi Analysis"),
+            ("💰", "Crop & Price"),
+        ]),
+        ("Logistics & Environment", [
+            ("🚛", "Transport"),
+            ("🌦️", "Weather Impact"),
+        ]),
+        ("Intelligence & Quality", [
+            ("🔍", "Data Quality"),
+            ("✨", "AI Analytics ✨"),
+        ]),
+    ]
+    ALL_PAGES = [
         ("🏠", "Overview"),
         ("📊", "Mandi Analysis"),
         ("💰", "Crop & Price"),
@@ -79,15 +92,18 @@ with st.sidebar:
     if "nav_page" not in st.session_state:
         st.session_state["nav_page"] = "Overview"
 
-    st.markdown('<div class="nav-section">', unsafe_allow_html=True)
-    for icon, label in NAV_PAGES:
-        is_active = st.session_state["nav_page"] == label
-        btn_class = "nav-btn nav-btn-active" if is_active else "nav-btn"
-        st.markdown(f'<div class="{btn_class}">{icon}&nbsp;&nbsp;{label}</div>', unsafe_allow_html=True)
-        if st.button(label, key=f"nav_{label}", use_container_width=True):
-            st.session_state["nav_page"] = label
-            st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    for section_label, pages in NAV_SECTIONS:
+        st.markdown(f'<div class="sidebar-section-title">{section_label}</div>', unsafe_allow_html=True)
+        for icon, label in pages:
+            is_active = (st.session_state["nav_page"] == label)
+            if st.button(
+                f"{icon}  {label}",
+                key=f"sb_nav_{label}",
+                type="primary" if is_active else "secondary",
+                use_container_width=True,
+            ):
+                st.session_state["nav_page"] = label
+                st.rerun()
 
     page = st.session_state["nav_page"]
 
@@ -143,7 +159,8 @@ with st.sidebar:
     sel_warehouse = st.selectbox("Logistics Warehouse", wh_opts, key="filter_warehouse")
 
     # Reset button
-    st.markdown("<div style='margin-top:0.4rem;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top:0.5rem;'></div>", unsafe_allow_html=True)
+    st.markdown('<div class="reset-btn-container">', unsafe_allow_html=True)
     if st.button("↺ Reset All Filters", key="reset_filters", use_container_width=True):
         st.session_state.update({
             "filter_crop": "All",
@@ -152,6 +169,7 @@ with st.sidebar:
             "filter_warehouse": "All",
         })
         st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<hr style='border:none;border-top:1px solid rgba(255,255,255,0.08);margin:1rem 0;'>", unsafe_allow_html=True)
     st.markdown(
@@ -225,6 +243,42 @@ def _show_page(page_name: str) -> None:
     elif page_name == "AI Analytics ✨":
         ai_analytics.render(main_df)  # always full dataset for AI queries
 
+
+# ── Menu Bar Access Section ───────────────────────────────────────────────────
+st.markdown(
+    f"""
+<div class="mf-menu-bar-access">
+  <div class="mf-menu-access-header">
+    <div class="mf-menu-access-brand">
+      <span>🌾 MandiFlow Analytics</span>
+      <span class="mf-menu-access-tag">Menu Access Center</span>
+    </div>
+    <div style="font-size: 0.74rem; color: #64748b; font-weight: 500;">
+      Current Module: <strong style="color: #166534; font-size: 0.82rem;">{page}</strong>
+    </div>
+  </div>
+</div>
+""",
+    unsafe_allow_html=True,
+)
+
+top_cols = st.columns(len(ALL_PAGES))
+for idx, (icon, label) in enumerate(ALL_PAGES):
+    is_active = (page == label)
+    short_label = label.replace(" ✨", "")
+    with top_cols[idx]:
+        st.markdown('<div class="top-menu-pills-container">', unsafe_allow_html=True)
+        if st.button(
+            f"{icon} {short_label}",
+            key=f"topbar_nav_{label}",
+            type="primary" if is_active else "secondary",
+            use_container_width=True,
+        ):
+            st.session_state["nav_page"] = label
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown("<div style='margin-bottom: 0.75rem;'></div>", unsafe_allow_html=True)
 
 _show_page(page)
 
