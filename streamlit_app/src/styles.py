@@ -1,4 +1,4 @@
-﻿"""
+"""
 MandiFlow Dashboard - Design System and Theme
 Dark-green sidebar with high-contrast navigation, enterprise KPI cards.
 """
@@ -78,6 +78,7 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
     padding: 1rem 1rem !important;
+    gap: 0 !important;
 }
 
 .sidebar-brand-box {
@@ -112,59 +113,61 @@ html, body, [data-testid="stAppViewContainer"] {
     opacity: 0.8;
 }
 
-[data-testid="stSidebar"] .stRadio > div,
-[data-testid="stSidebar"] .stRadio [role="radiogroup"] {
-    gap: 2px !important;
-    display: flex !important;
-    flex-direction: column !important;
+/* ── Custom Nav Buttons (replaces st.radio for dark-bg compatibility) ── */
+
+/* Wrapper: collapse gap between the label div and invisible button */
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
+    gap: 0 !important;
 }
 
-[data-testid="stSidebar"] .stRadio label {
-    display: flex !important;
-    align-items: center !important;
-    padding: 0.48rem 0.8rem !important;
-    border-radius: 7px !important;
-    font-size: 0.84rem !important;
-    font-weight: 500 !important;
-    color: #cbd5e1 !important;
-    cursor: pointer !important;
-    width: 100% !important;
-    border: 1px solid transparent !important;
+/* The visible nav label div sits on top of the transparent st.button */
+.nav-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 0.46rem 0.8rem;
+    border-radius: 7px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.84rem;
+    font-weight: 500;
+    color: #cbd5e1;
+    cursor: pointer;
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    transition: background 0.15s ease, color 0.15s ease;
+    margin: 1px 0;
+    pointer-events: none;  /* clicks go through to the button beneath */
+    z-index: 1;
+    letter-spacing: 0.01em;
+}
+.nav-btn-active {
+    background: rgba(22,101,52,0.48);
+    color: #ffffff;
+    font-weight: 700;
+    border: 1px solid rgba(74,222,128,0.35);
+}
+
+/* The real st.button is rendered directly after the div – make it overlap */
+.nav-section .stButton {
+    margin-top: -2.15rem !important;
+    margin-bottom: 2px !important;
+}
+.nav-section .stButton > button {
     background: transparent !important;
-    transition: background 0.15s ease, color 0.15s ease !important;
-    margin: 0 !important;
+    color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    height: 2.1rem !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    border-radius: 7px !important;
+    position: relative;
+    z-index: 2;
 }
-
-[data-testid="stSidebar"] .stRadio label *,
-[data-testid="stSidebar"] .stRadio label p,
-[data-testid="stSidebar"] .stRadio label span,
-[data-testid="stSidebar"] .stRadio label div {
-    color: inherit !important;
-    font-size: inherit !important;
-    font-weight: inherit !important;
-}
-
-[data-testid="stSidebar"] .stRadio input[type="radio"] {
-    display: none !important;
-}
-[data-testid="stSidebar"] .stRadio [data-testid="stMarkdownContainer"] > p {
-    margin: 0 !important;
-    line-height: 1.4 !important;
-}
-
-[data-testid="stSidebar"] .stRadio label:hover {
-    background: rgba(255,255,255,0.07) !important;
-    color: #ffffff !important;
-}
-
-[data-testid="stSidebar"] .stRadio label[aria-checked="true"],
-[data-testid="stSidebar"] .stRadio [data-checked="true"] > label,
-[data-testid="stSidebar"] .stRadio [data-checked="true"] label,
-[data-testid="stSidebar"] .stRadio label:has(input[type="radio"]:checked) {
-    background: rgba(22,101,52,0.50) !important;
-    color: #ffffff !important;
-    font-weight: 700 !important;
-    border-color: rgba(74,222,128,0.35) !important;
+.nav-section .stButton > button:hover {
+    background: rgba(255,255,255,0.06) !important;
 }
 
 [data-testid="stSidebar"] .stSelectbox label p,

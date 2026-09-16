@@ -64,14 +64,32 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # Navigation
+    # Navigation – custom button-based nav for full CSS control on dark bg
     st.markdown('<div class="sidebar-section-title">Navigation</div>', unsafe_allow_html=True)
-    page = st.radio(
-        "Page",
-        options=["Overview", "Mandi Analysis", "Crop & Price", "Transport", "Weather Impact", "Data Quality", "AI Analytics ✨"],
-        label_visibility="collapsed",
-        key="nav_page",
-    )
+
+    NAV_PAGES = [
+        ("🏠", "Overview"),
+        ("📊", "Mandi Analysis"),
+        ("💰", "Crop & Price"),
+        ("🚛", "Transport"),
+        ("🌦️", "Weather Impact"),
+        ("🔍", "Data Quality"),
+        ("✨", "AI Analytics ✨"),
+    ]
+    if "nav_page" not in st.session_state:
+        st.session_state["nav_page"] = "Overview"
+
+    st.markdown('<div class="nav-section">', unsafe_allow_html=True)
+    for icon, label in NAV_PAGES:
+        is_active = st.session_state["nav_page"] == label
+        btn_class = "nav-btn nav-btn-active" if is_active else "nav-btn"
+        st.markdown(f'<div class="{btn_class}">{icon}&nbsp;&nbsp;{label}</div>', unsafe_allow_html=True)
+        if st.button(label, key=f"nav_{label}", use_container_width=True, label_visibility="collapsed"):
+            st.session_state["nav_page"] = label
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    page = st.session_state["nav_page"]
 
     st.markdown("<hr style='border:none;border-top:1px solid rgba(255,255,255,0.08);margin:1rem 0;'>", unsafe_allow_html=True)
 
