@@ -9,8 +9,9 @@ from src import charts, metrics, styles
 
 def render(df: pd.DataFrame, prices_df: pd.DataFrame, filters: dict) -> None:
     st.markdown(styles.page_header(
-        "Crop & Price",
-        "Analyze crop-level arrivals, modal prices, MSP gaps and price risks.",
+        "Crop Price Discovery & MSP Parity",
+        "Deep-dive into mandi realization prices, government MSP support floors, downside price crash risks, and market spreads.",
+        badge="PRICE DISCOVERY",
     ), unsafe_allow_html=True)
 
     if df.empty:
@@ -22,49 +23,47 @@ def render(df: pd.DataFrame, prices_df: pd.DataFrame, filters: dict) -> None:
     c1, c2, c3, c4, c5, c6 = st.columns(6)
     gap_val = kpis["avg_msp_gap"] or 0
     kpi_data = [
-        (c1, "Avg Modal Price",   metrics.fmt_inr(kpis["avg_modal_price"]),   "emerald", "Modal Realization"),
-        (c2, "Average MSP",       metrics.fmt_inr(kpis["avg_msp"]),           "amber",   "Support Floor"),
+        (c1, "Avg Modal Price",   metrics.fmt_inr(kpis["avg_modal_price"]),   "emerald", "Modal Realization", "💰"),
+        (c2, "Average MSP",       metrics.fmt_inr(kpis["avg_msp"]),           "amber",   "Support Floor",    "🛡️"),
         (c3, "Average MSP Gap",   metrics.fmt_inr(kpis["avg_msp_gap"]),
-         "danger" if gap_val < 0 else "emerald", "Spread to MSP"),
-        (c4, "Crash Instances",   metrics.fmt_int(kpis["price_crash_count"]), "danger",  "Below Floor"),
-        (c5, "Price Crash Rate",  metrics.fmt_pct(kpis["price_crash_rate"]),  "amber",   "Risk Percentage"),
-        (c6, "Avg Price Spread",  metrics.fmt_inr(kpis["avg_price_spread"]),  "sky",     "Market Volatility"),
+         "danger" if gap_val < 0 else "emerald", "Spread to MSP Floor", "📉" if gap_val < 0 else "📈"),
+        (c4, "Crash Instances",   metrics.fmt_int(kpis["price_crash_count"]), "danger",  "Below Support Floor", "⚠️"),
+        (c5, "Price Crash Rate",  metrics.fmt_pct(kpis["price_crash_rate"]),  "amber",   "Market Risk Level", "🚨"),
+        (c6, "Avg Price Spread",  metrics.fmt_inr(kpis["avg_price_spread"]),  "sky",     "Price Dispersion", "📊"),
     ]
-    for col, label, val, variant, delta in kpi_data:
+    for col, label, val, variant, delta, icon in kpi_data:
         with col:
-            st.markdown(styles.kpi_card(label, val, variant=variant, delta=delta), unsafe_allow_html=True)
-
-    st.markdown("<hr class='mf-divider'>", unsafe_allow_html=True)
+            st.markdown(styles.kpi_card(label, val, variant=variant, delta=delta, icon=icon), unsafe_allow_html=True)
 
     # ── Chart Row 1 ───────────────────────────────────────────────────────────
-    st.markdown(styles.section_header("Price vs MSP Analysis"), unsafe_allow_html=True)
+    st.markdown(styles.section_header("Price vs MSP Floor Parity", "REALIZATION VS FLOOR"), unsafe_allow_html=True)
     c_l, c_r = st.columns(2)
     with c_l:
         st.plotly_chart(charts.create_price_vs_msp_grouped(df),
-                        width='stretch', config={"displayModeBar": False})
+                        use_container_width=True, config={"displayModeBar": False})
     with c_r:
         st.plotly_chart(charts.create_msp_gap_chart(df),
-                        width='stretch', config={"displayModeBar": False})
+                        use_container_width=True, config={"displayModeBar": False})
 
     # ── Chart Row 2 ───────────────────────────────────────────────────────────
-    st.markdown(styles.section_header("Price Risk"), unsafe_allow_html=True)
+    st.markdown(styles.section_header("Price Volatility & Downside Risk", "RISK MATRIX"), unsafe_allow_html=True)
     c_l2, c_r2 = st.columns(2)
     with c_l2:
         st.plotly_chart(charts.create_price_crash_rate(df),
-                        width='stretch', config={"displayModeBar": False})
+                        use_container_width=True, config={"displayModeBar": False})
     with c_r2:
         st.plotly_chart(charts.create_price_spread(df, prices_df),
-                        width='stretch', config={"displayModeBar": False})
+                        use_container_width=True, config={"displayModeBar": False})
 
     # ── Price Trend ───────────────────────────────────────────────────────────
-    st.markdown(styles.section_header("Price Trend"), unsafe_allow_html=True)
+    st.markdown(styles.section_header("Historical Price Realization vs MSP Trend", "TIME SERIES"), unsafe_allow_html=True)
     fc1, fc2 = st.columns([2, 1])
     with fc1:
         crop_opts = ["All"] + sorted(df["crop_name"].dropna().unique().tolist()) if "crop_name" in df.columns else ["All"]
-        trend_crop = st.selectbox("Crop", crop_opts, key="price_trend_crop")
+        trend_crop = st.selectbox("Crop Commodity", crop_opts, key="price_trend_crop")
     with fc2:
         mandi_opts = ["All"] + sorted(df["mandi_name"].dropna().unique().tolist()) if "mandi_name" in df.columns else ["All"]
-        trend_mandi = st.selectbox("Mandi", mandi_opts, key="price_trend_mandi")
+        trend_mandi = st.selectbox("Mandi Center", mandi_opts, key="price_trend_mandi")
 
     trend_df = df.copy()
     if trend_crop != "All":
@@ -73,13 +72,13 @@ def render(df: pd.DataFrame, prices_df: pd.DataFrame, filters: dict) -> None:
         trend_df = trend_df[trend_df["mandi_name"] == trend_mandi]
 
     if trend_df.empty:
-        st.markdown(styles.empty_state(), unsafe_allow_html=True)
+        st.markdown(styles.empty_state("No price history available for the selected crop and mandi."), unsafe_allow_html=True)
     else:
         st.plotly_chart(charts.create_price_trend(trend_df, trend_crop, trend_mandi),
-                        width='stretch', config={"displayModeBar": False})
+                        use_container_width=True, config={"displayModeBar": False})
 
     # ── Price Risk Table ──────────────────────────────────────────────────────
-    st.markdown(styles.section_header("Price Risk Summary Table"), unsafe_allow_html=True)
+    st.markdown(styles.section_header("Crop Price Risk & Floor Summary", "DATA TABLE"), unsafe_allow_html=True)
 
     if "price_vs_msp" not in df.columns or "crop_name" not in df.columns:
         st.info("Price risk data unavailable in current dataset.")
@@ -107,20 +106,12 @@ def render(df: pd.DataFrame, prices_df: pd.DataFrame, filters: dict) -> None:
         agg["Crash_Count"] = agg["Crash_Count"].astype(int)
 
         agg.columns = ["Crop", "Avg Modal Price", "Avg MSP", "MSP Gap", "MSP Gap %", "Crash Count", "Crash Rate"]
-        st.dataframe(agg, width='stretch', hide_index=True)
+        st.dataframe(agg, use_container_width=True, hide_index=True)
 
-        # Download summary
+        st.markdown("<div style='margin-top: 1rem;'></div>", unsafe_allow_html=True)
         st.download_button(
-            "Download Price Summary (CSV)",
+            "📥 Download Price Risk Summary (CSV)",
             data=agg.to_csv(index=False).encode("utf-8"),
             file_name="mandiflow_price_summary.csv",
             mime="text/csv",
         )
-
-    st.download_button(
-        "Download Filtered Data (CSV)",
-        data=df.to_csv(index=False).encode("utf-8"),
-        file_name="mandiflow_crop_price.csv",
-        mime="text/csv",
-        key="cp_dl_main",
-    )

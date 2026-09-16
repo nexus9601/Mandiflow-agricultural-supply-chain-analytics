@@ -9,8 +9,9 @@ from src import charts, metrics, styles
 
 def render(df: pd.DataFrame, filters: dict) -> None:
     st.markdown(styles.page_header(
-        "Mandi Analysis",
-        "Compare mandi activity, geographical distribution and arrival volumes.",
+        "Mandi Activity & Geographical Benchmarking",
+        "Comparative evaluation of trading hubs, catchment district concentration, and throughput velocity.",
+        badge="MANDI INTELLIGENCE",
     ), unsafe_allow_html=True)
 
     if df.empty:
@@ -21,35 +22,33 @@ def render(df: pd.DataFrame, filters: dict) -> None:
     kpis = metrics.mandi_kpis(df)
     c1, c2, c3, c4 = st.columns(4)
     kpi_data = [
-        (c1, "Active Mandis",       metrics.fmt_int(kpis["n_mandis"]),   "emerald", "Reporting Centers"),
-        (c2, "Total Inflow Volume", metrics.fmt_qty(kpis["total_volume"]), "emerald", "Quintals Aggregated"),
-        (c3, "Top Volume Mandi",    str(kpis["top_mandi"]),              "sky",     "Highest Inflow"),
-        (c4, "Dominant District",   str(kpis["top_district"]),           "default", "Catchment Hub"),
+        (c1, "Active Mandis",       metrics.fmt_int(kpis["n_mandis"]),   "emerald", "Reporting Centers", "🏛️"),
+        (c2, "Total Inflow Volume", metrics.fmt_qty(kpis["total_volume"]), "emerald", "Quintals Aggregated", "📦"),
+        (c3, "Top Volume Mandi",    str(kpis["top_mandi"]),              "sky",     "Highest Inflow Hub", "🏆"),
+        (c4, "Dominant District",   str(kpis["top_district"]),           "amber",   "Catchment Hub", "📍"),
     ]
-    for col, label, val, variant, delta in kpi_data:
+    for col, label, val, variant, delta, icon in kpi_data:
         with col:
-            st.markdown(styles.kpi_card(label, val, variant=variant, delta=delta), unsafe_allow_html=True)
-
-    st.markdown("<hr class='mf-divider'>", unsafe_allow_html=True)
+            st.markdown(styles.kpi_card(label, val, variant=variant, delta=delta, icon=icon), unsafe_allow_html=True)
 
     # ── Top Mandis + District Distribution ───────────────────────────────────
-    st.markdown(styles.section_header("Arrival Volume"), unsafe_allow_html=True)
+    st.markdown(styles.section_header("Arrival Volume Concentration", "DISTRIBUTION"), unsafe_allow_html=True)
     c_l, c_r = st.columns(2)
     with c_l:
-        top_n = st.slider("Number of mandis to show", 5, 20, 10, key="mandi_topn")
-        st.plotly_chart(charts.create_top_mandis(df, top_n=top_n), width='stretch', config={"displayModeBar": False})
+        top_n = st.slider("Number of mandis to rank", 5, 20, 10, key="mandi_topn")
+        st.plotly_chart(charts.create_top_mandis(df, top_n=top_n), use_container_width=True, config={"displayModeBar": False})
     with c_r:
-        st.plotly_chart(charts.create_district_distribution(df), width='stretch', config={"displayModeBar": False})
+        st.plotly_chart(charts.create_district_distribution(df), use_container_width=True, config={"displayModeBar": False})
 
     # ── Mandi Arrival Trend ───────────────────────────────────────────────────
-    st.markdown(styles.section_header("Mandi Arrival Trend"), unsafe_allow_html=True)
+    st.markdown(styles.section_header("Mandi Arrival Time Series", "HISTORICAL TRENDS"), unsafe_allow_html=True)
     tc1, tc2 = st.columns([2, 1])
     with tc1:
         mandi_opts = ["All"] + sorted(df["mandi_name"].dropna().unique().tolist()) if "mandi_name" in df.columns else ["All"]
-        sel_mandi = st.selectbox("Mandi", mandi_opts, key="mandi_trend_mandi")
+        sel_mandi = st.selectbox("Trading Mandi", mandi_opts, key="mandi_trend_mandi")
     with tc2:
         crop_opts = ["All"] + sorted(df["crop_name"].dropna().unique().tolist()) if "crop_name" in df.columns else ["All"]
-        sel_crop = st.selectbox("Crop", crop_opts, key="mandi_trend_crop")
+        sel_crop = st.selectbox("Crop Filter", crop_opts, key="mandi_trend_crop")
 
     trend_df = df.copy()
     if sel_mandi != "All":
@@ -58,13 +57,13 @@ def render(df: pd.DataFrame, filters: dict) -> None:
         trend_df = trend_df[trend_df["crop_name"] == sel_crop]
 
     if trend_df.empty:
-        st.markdown(styles.empty_state(), unsafe_allow_html=True)
+        st.markdown(styles.empty_state("No time-series data available for the chosen Mandi and Crop."), unsafe_allow_html=True)
     else:
         st.plotly_chart(charts.create_mandi_trend(trend_df, sel_mandi, sel_crop),
-                        width='stretch', config={"displayModeBar": False})
+                        use_container_width=True, config={"displayModeBar": False})
 
     # ── Mandi Performance Table ───────────────────────────────────────────────
-    st.markdown(styles.section_header("Mandi Performance Table"), unsafe_allow_html=True)
+    st.markdown(styles.section_header("Mandi Operational Performance Summary", "DATA TABLE"), unsafe_allow_html=True)
 
     perf_cols = {
         "mandi_id": "Mandi ID",
@@ -107,27 +106,29 @@ def render(df: pd.DataFrame, filters: dict) -> None:
         "district": "District",
     }
     perf = perf.rename(columns={k: v for k, v in rename_map.items() if k in perf.columns})
-    perf = perf.sort_values("Total Arrivals (Qtl)", ascending=False)
+    raw_sorted = perf.sort_values("Total Arrivals (Qtl)", ascending=False)
 
-    if "Crash Rate" in perf.columns:
-        perf["Crash Rate"] = (perf["Crash Rate"] * 100).round(1).astype(str) + "%"
-    if "Total Arrivals (Qtl)" in perf.columns:
-        perf["Total Arrivals (Qtl)"] = perf["Total Arrivals (Qtl)"].map(lambda x: f"{x:,.0f}")
-    if "Avg Modal Price (₹)" in perf.columns:
-        perf["Avg Modal Price (₹)"] = perf["Avg Modal Price (₹)"].map(
+    display_perf = raw_sorted.copy()
+    if "Crash Rate" in display_perf.columns:
+        display_perf["Crash Rate"] = (display_perf["Crash Rate"] * 100).round(1).astype(str) + "%"
+    if "Total Arrivals (Qtl)" in display_perf.columns:
+        display_perf["Total Arrivals (Qtl)"] = display_perf["Total Arrivals (Qtl)"].map(lambda x: f"{x:,.0f}")
+    if "Avg Modal Price (₹)" in display_perf.columns:
+        display_perf["Avg Modal Price (₹)"] = display_perf["Avg Modal Price (₹)"].map(
             lambda x: f"₹{x:,.0f}" if not np.isnan(x) else "—"
         )
-    if "Avg MSP (₹)" in perf.columns:
-        perf["Avg MSP (₹)"] = perf["Avg MSP (₹)"].map(
+    if "Avg MSP (₹)" in display_perf.columns:
+        display_perf["Avg MSP (₹)"] = display_perf["Avg MSP (₹)"].map(
             lambda x: f"₹{x:,.0f}" if not np.isnan(x) else "—"
         )
 
-    st.dataframe(perf, width='stretch', hide_index=True)
+    st.dataframe(display_perf, use_container_width=True, hide_index=True)
 
     # ── Download ──────────────────────────────────────────────────────────────
+    st.markdown("<div style='margin-top: 1rem;'></div>", unsafe_allow_html=True)
     st.download_button(
-        "Download Filtered Data (CSV)",
-        data=df.to_csv(index=False).encode("utf-8"),
+        "📥 Download Mandi Performance Data (CSV)",
+        data=raw_sorted.to_csv(index=False).encode("utf-8"),
         file_name="mandiflow_mandi_analysis.csv",
         mime="text/csv",
     )

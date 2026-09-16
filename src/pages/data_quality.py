@@ -9,8 +9,9 @@ from src import styles
 
 def render(df: pd.DataFrame, transport_df: pd.DataFrame) -> None:
     st.markdown(styles.page_header(
-        "Data Quality",
-        "Transparent view of data quality checks, missing values and anomalies.",
+        "Data Integrity & Pipeline Validation",
+        "Systematic verification of cross-dataset joins, range checks, missingness profiles, and anomaly audits across arrivals, prices, and logistics.",
+        badge="DATA AUDIT",
     ), unsafe_allow_html=True)
 
     # ── Quality check functions ───────────────────────────────────────────────
@@ -87,7 +88,6 @@ def render(df: pd.DataFrame, transport_df: pd.DataFrame) -> None:
             "_threshold_warn": 1, "_threshold_crit": 10,
         })
     else:
-        # Use integrated fallback
         checks.append({
             "Dataset": "Transport (integrated)",
             "Check": "Negative cleaned transit hours",
@@ -116,18 +116,16 @@ def render(df: pd.DataFrame, transport_df: pd.DataFrame) -> None:
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        st.markdown(styles.kpi_card("Total Checks", str(len(checks)), variant="sky", delta="Validation Rules"), unsafe_allow_html=True)
+        st.markdown(styles.kpi_card("Total Checks", str(len(checks)), variant="sky", delta="Validation Rules", icon="📋"), unsafe_allow_html=True)
     with c2:
-        st.markdown(styles.kpi_card("Checks Passed", str(good_count), variant="emerald", delta="Zero Anomalies", trend="up"), unsafe_allow_html=True)
+        st.markdown(styles.kpi_card("Checks Passed", str(good_count), variant="emerald", delta="Zero Anomalies", trend="up", icon="✅"), unsafe_allow_html=True)
     with c3:
-        st.markdown(styles.kpi_card("Warnings", str(warn_count), variant="amber", delta="Moderate Gaps"), unsafe_allow_html=True)
+        st.markdown(styles.kpi_card("Warnings", str(warn_count), variant="amber", delta="Moderate Gaps", icon="⚠️"), unsafe_allow_html=True)
     with c4:
-        st.markdown(styles.kpi_card("Critical Issues", str(crit_count), variant="danger", delta="High Imputation Need", trend="down"), unsafe_allow_html=True)
-
-    st.markdown("<hr class='mf-divider'>", unsafe_allow_html=True)
+        st.markdown(styles.kpi_card("Critical Issues", str(crit_count), variant="danger", delta="High Imputation Need", trend="down", icon="🚨"), unsafe_allow_html=True)
 
     # ── Quality Table ─────────────────────────────────────────────────────────
-    st.markdown(styles.section_header("Quality Check Results"), unsafe_allow_html=True)
+    st.markdown(styles.section_header("Quality Verification Matrix", "AUDIT RESULTS"), unsafe_allow_html=True)
 
     rows = []
     for c in checks:
@@ -140,41 +138,71 @@ def render(df: pd.DataFrame, transport_df: pd.DataFrame) -> None:
         })
 
     qdf = pd.DataFrame(rows)
-    st.dataframe(qdf, width='stretch', hide_index=True)
+    st.dataframe(qdf, use_container_width=True, hide_index=True)
 
     # ── Dataset Overview ──────────────────────────────────────────────────────
-    st.markdown(styles.section_header("Dataset Overview"), unsafe_allow_html=True)
+    st.markdown(styles.section_header("Harmonized Dataset Metadata", "CORPUS STATS"), unsafe_allow_html=True)
     c_l, c_r = st.columns(2)
     with c_l:
-        st.metric("Total Records (Integrated)", f"{len(df):,}")
-        st.metric("Date Range",
-                  f"{df['date'].min().date() if 'date' in df.columns and df['date'].notna().any() else '—'}"
-                  f" to "
-                  f"{df['date'].max().date() if 'date' in df.columns and df['date'].notna().any() else '—'}")
-        st.metric("Unique Crops", str(df["crop_name"].nunique()) if "crop_name" in df.columns else "—")
-        st.metric("Unique Mandis", str(df["mandi_name"].nunique()) if "mandi_name" in df.columns else "—")
+        date_str = (
+            f"{df['date'].min().date()} to {df['date'].max().date()}"
+            if 'date' in df.columns and df['date'].notna().any()
+            else "—"
+        )
+        st.markdown(f"""
+<div class="insight-card" style="margin-top: 0;">
+  <h4>Core Inflow Scope</h4>
+  <div class="insight-item" style="margin-bottom: 8px;">
+    <span class="insight-label">Total Records:</span> <strong>{len(df):,}</strong>
+  </div>
+  <div class="insight-item" style="margin-bottom: 8px;">
+    <span class="insight-label">Observation Window:</span> <strong>{date_str}</strong>
+  </div>
+  <div class="insight-item" style="margin-bottom: 8px;">
+    <span class="insight-label">Distinct Commodities:</span> <strong>{df['crop_name'].nunique() if 'crop_name' in df.columns else '—'}</strong>
+  </div>
+  <div class="insight-item">
+    <span class="insight-label">Distinct Mandis:</span> <strong>{df['mandi_name'].nunique() if 'mandi_name' in df.columns else '—'}</strong>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
     with c_r:
-        st.metric("Total Columns", str(len(df.columns)))
-        st.metric("Unique Districts", str(df["district"].nunique()) if "district" in df.columns else "—")
-        if not transport_df.empty:
-            st.metric("Transport Records", f"{len(transport_df):,}")
-            st.metric("Unique Warehouses",
-                      str(transport_df["warehouse"].nunique()) if "warehouse" in transport_df.columns else "—")
+        trans_recs = f"{len(transport_df):,}" if not transport_df.empty else "Integrated"
+        trans_wh = str(transport_df["warehouse"].nunique()) if not transport_df.empty and "warehouse" in transport_df.columns else "—"
+        st.markdown(f"""
+<div class="insight-card" style="margin-top: 0;">
+  <h4>Geographic & Logistics Scope</h4>
+  <div class="insight-item" style="margin-bottom: 8px;">
+    <span class="insight-label">Total Schema Attributes:</span> <strong>{len(df.columns)} columns</strong>
+  </div>
+  <div class="insight-item" style="margin-bottom: 8px;">
+    <span class="insight-label">Catchment Districts:</span> <strong>{df['district'].nunique() if 'district' in df.columns else '—'}</strong>
+  </div>
+  <div class="insight-item" style="margin-bottom: 8px;">
+    <span class="insight-label">Transport Records:</span> <strong>{trans_recs}</strong>
+  </div>
+  <div class="insight-item">
+    <span class="insight-label">Logistics Warehouses:</span> <strong>{trans_wh}</strong>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
     # ── Null heatmap per column ───────────────────────────────────────────────
-    st.markdown(styles.section_header("Missing Value Counts by Column"), unsafe_allow_html=True)
+    st.markdown(styles.section_header("Missing Value Audit by Feature", "MISSINGNESS"), unsafe_allow_html=True)
     null_counts = df.isnull().sum().reset_index()
     null_counts.columns = ["Column", "Missing Count"]
     null_counts["Missing %"] = (null_counts["Missing Count"] / len(df) * 100).round(2).astype(str) + "%"
     null_counts = null_counts[null_counts["Missing Count"] > 0].sort_values("Missing Count", ascending=False)
     if null_counts.empty:
-        st.success("No missing values detected in the integrated dataset.")
+        st.success("Zero missing values detected across the integrated features.")
     else:
-        st.dataframe(null_counts, width='stretch', hide_index=True)
+        st.dataframe(null_counts, use_container_width=True, hide_index=True)
 
     # ── Download ──────────────────────────────────────────────────────────────
+    st.markdown("<div style='margin-top: 1rem;'></div>", unsafe_allow_html=True)
     st.download_button(
-        "Download Quality Report (CSV)",
+        "📥 Download Quality Audit Report (CSV)",
         data=pd.DataFrame(rows).to_csv(index=False).encode("utf-8"),
         file_name="mandiflow_data_quality.csv",
         mime="text/csv",

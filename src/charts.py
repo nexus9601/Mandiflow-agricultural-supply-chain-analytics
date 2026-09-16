@@ -1,6 +1,7 @@
 """
-MandiFlow Dashboard – Charts
-All Plotly chart factory functions. No Streamlit calls here.
+MandiFlow Dashboard – Modern Charts
+Plotly chart factory functions with executive styling: smooth spline curves, soft area fills,
+rounded bar corners, curated palette mappings, and sleek dark tooltips.
 """
 
 from __future__ import annotations
@@ -24,11 +25,11 @@ def _apply_theme(fig: go.Figure, title: str = "", height: int = 370) -> go.Figur
         **CHART_THEME,
         height=height,
         title=dict(
-            text=title,
-            font=dict(size=13, color="#0f172a", family="'Plus Jakarta Sans', sans-serif", weight=600),
-            x=0,
+            text=f"<b>{title}</b>",
+            font=dict(size=13, color="#0f172a", family="'Plus Jakarta Sans', sans-serif"),
+            x=0.01,
             xanchor="left",
-            pad=dict(l=4, b=8),
+            pad=dict(l=4, b=10),
         ),
         xaxis=dict(**AXIS_STYLE),
         yaxis=dict(**AXIS_STYLE),
@@ -39,7 +40,7 @@ def _apply_theme(fig: go.Figure, title: str = "", height: int = 370) -> go.Figur
 # ── Overview Charts ───────────────────────────────────────────────────────────
 
 def create_arrival_trend(df: pd.DataFrame, crop: str = "All") -> go.Figure:
-    """Daily crop arrival trend line chart with clean solid styling."""
+    """Daily crop arrival trend line chart with smooth spline and soft gradient fill."""
     if df.empty or "date" not in df.columns:
         return _empty_fig("No arrival data available.")
 
@@ -50,13 +51,15 @@ def create_arrival_trend(df: pd.DataFrame, crop: str = "All") -> go.Figure:
     fig.add_trace(go.Scatter(
         x=grp["date"], y=grp["arrivals"],
         mode="lines",
-        line=dict(color=COLORS["primary"], width=2),
+        line=dict(color=COLORS["primary"], width=2.5, shape="spline", smoothing=0.7),
+        fill="tozeroy",
+        fillcolor="rgba(5, 150, 105, 0.08)",
         name="Arrivals",
-        hovertemplate="<b>%{x|%d %b %Y}</b><br>Arrivals: %{y:,.0f} Qtl<extra></extra>",
+        hovertemplate="<b>%{x|%d %b %Y}</b><br>Arrivals: <b>%{y:,.0f} Qtl</b><extra></extra>",
     ))
 
     label = f" – {crop}" if crop and crop != "All" else ""
-    fig = _apply_theme(fig, f"Daily Crop Arrival Trend{label}", height=350)
+    fig = _apply_theme(fig, f"Daily Crop Arrival Trend{label}", height=360)
     fig.update_layout(
         xaxis_title="Date",
         yaxis_title="Arrival Quantity (Qtl)",
@@ -66,7 +69,7 @@ def create_arrival_trend(df: pd.DataFrame, crop: str = "All") -> go.Figure:
 
 
 def create_crop_distribution(df: pd.DataFrame, top_n: int = 15) -> go.Figure:
-    """Horizontal bar – crop-wise arrival distribution with ample label headroom."""
+    """Horizontal bar – crop-wise arrival distribution with rounded corners."""
     if df.empty or "crop_name" not in df.columns:
         return _empty_fig("No crop data available.")
 
@@ -91,13 +94,14 @@ def create_crop_distribution(df: pd.DataFrame, top_n: int = 15) -> go.Figure:
         texttemplate="%{x:,.0f}",
         textposition="outside",
         cliponaxis=False,
-        marker=dict(cornerradius=4),
+        marker=dict(cornerradius=6),
         textfont=dict(size=11, family="'Inter', sans-serif", color="#334155"),
+        hovertemplate="<b>%{y}</b><br>Arrivals: <b>%{x:,.0f} Qtl</b><extra></extra>",
     )
     fig = _apply_theme(fig, "Crop-wise Arrival Distribution", height=400)
     max_val = grp["Arrivals"].max() if not grp.empty else 100
     fig.update_layout(
-        xaxis=dict(**AXIS_STYLE, title="Total Arrivals (Qtl)", range=[0, max_val * 1.20]),
+        xaxis=dict(**AXIS_STYLE, title="Total Arrivals (Qtl)", range=[0, max_val * 1.22]),
         yaxis=dict(**AXIS_STYLE, title=""),
     )
     return fig
@@ -129,21 +133,21 @@ def create_top_mandis(df: pd.DataFrame, top_n: int = 10) -> go.Figure:
         texttemplate="%{x:,.0f}",
         textposition="outside",
         cliponaxis=False,
-        marker=dict(cornerradius=4),
+        marker=dict(cornerradius=6),
         textfont=dict(size=11, family="'Inter', sans-serif", color="#334155"),
-        hovertemplate="<b>%{y}</b><br>%{x:,.0f} Qtl<extra></extra>",
+        hovertemplate="<b>%{y}</b><br>Volume: <b>%{x:,.0f} Qtl</b><extra></extra>",
     )
     fig = _apply_theme(fig, f"Top {top_n} Mandis by Arrival Volume", height=400)
     max_val = grp["Arrivals"].max() if not grp.empty else 100
     fig.update_layout(
-        xaxis=dict(**AXIS_STYLE, title="Total Arrivals (Qtl)", range=[0, max_val * 1.20]),
+        xaxis=dict(**AXIS_STYLE, title="Total Arrivals (Qtl)", range=[0, max_val * 1.22]),
         yaxis=dict(**AXIS_STYLE, title=""),
     )
     return fig
 
 
 def create_price_vs_msp_grouped(df: pd.DataFrame) -> go.Figure:
-    """Grouped bar – Average Modal Price vs MSP by crop with rounded corners."""
+    """Grouped bar – Average Modal Price vs MSP by crop with rich contrasting colors."""
     needed = {"crop_name", "modal_price", "msp"}
     if df.empty or not needed.issubset(df.columns):
         return _empty_fig("Price vs MSP data unavailable.")
@@ -160,17 +164,17 @@ def create_price_vs_msp_grouped(df: pd.DataFrame) -> go.Figure:
     fig.add_trace(go.Bar(
         name="Avg Modal Price",
         x=grp["crop_name"], y=grp["modal_price"],
-        marker=dict(color=COLORS["primary"], cornerradius=4),
-        hovertemplate="<b>%{x}</b><br>Modal Price: ₹%{y:,.0f}<extra></extra>",
+        marker=dict(color=COLORS["primary"], cornerradius=6),
+        hovertemplate="<b>%{x}</b><br>Modal Price: <b>₹%{y:,.0f}</b><extra></extra>",
     ))
     fig.add_trace(go.Bar(
-        name="Avg MSP",
+        name="Avg MSP (Floor)",
         x=grp["crop_name"], y=grp["msp"],
-        marker=dict(color=COLORS["accent"], cornerradius=4),
-        hovertemplate="<b>%{x}</b><br>MSP: ₹%{y:,.0f}<extra></extra>",
+        marker=dict(color=COLORS["accent"], cornerradius=6),
+        hovertemplate="<b>%{x}</b><br>MSP Floor: <b>₹%{y:,.0f}</b><extra></extra>",
     ))
     fig.update_layout(barmode="group", bargap=0.25, bargroupgap=0.1)
-    fig = _apply_theme(fig, "Average Modal Price vs MSP by Crop", height=380)
+    fig = _apply_theme(fig, "Average Modal Price vs MSP Floor by Crop", height=380)
     fig.update_layout(
         xaxis_title="Crop",
         yaxis_title="Price (₹/Qtl)",
@@ -180,9 +184,10 @@ def create_price_vs_msp_grouped(df: pd.DataFrame) -> go.Figure:
             y=1.02,
             xanchor="right",
             x=1,
-            bgcolor="rgba(255,255,255,0.85)",
+            bgcolor="rgba(255,255,255,0.9)",
             bordercolor="#e2e8f0",
             borderwidth=1,
+            font=dict(size=11, family="'Inter', sans-serif"),
         ),
     )
     return fig
@@ -210,15 +215,16 @@ def create_district_distribution(df: pd.DataFrame) -> go.Figure:
         labels={"Arrivals": "Total Arrivals (Qtl)", "District": "District"},
     )
     fig.update_traces(
-        hovertemplate="<b>%{x}</b><br>%{y:,.0f} Qtl<extra></extra>",
+        marker=dict(cornerradius=6),
+        hovertemplate="<b>%{x}</b><br>Arrivals: <b>%{y:,.0f} Qtl</b><extra></extra>",
     )
-    fig = _apply_theme(fig, "Arrival Volume by District", height=380)
+    fig = _apply_theme(fig, "Arrival Volume by Catchment District", height=380)
     fig.update_layout(xaxis_title="District", yaxis_title="Total Arrivals (Qtl)")
     return fig
 
 
 def create_mandi_trend(df: pd.DataFrame, mandi: str, crop: str) -> go.Figure:
-    """Line chart – arrival trend for a selected mandi."""
+    """Line chart – arrival trend for a selected mandi with smooth spline."""
     if df.empty or "date" not in df.columns:
         return _empty_fig("No data for the selected mandi/crop.")
 
@@ -236,11 +242,13 @@ def create_mandi_trend(df: pd.DataFrame, mandi: str, crop: str) -> go.Figure:
     fig.add_trace(go.Scatter(
         x=grp["date"], y=grp["arrivals"],
         mode="lines+markers",
-        line=dict(color=COLORS["primary"], width=2),
-        marker=dict(size=4, color=COLORS["primary"]),
-        hovertemplate="<b>%{x|%d %b %Y}</b><br>%{y:,.0f} Qtl<extra></extra>",
+        line=dict(color=COLORS["primary"], width=2.5, shape="spline", smoothing=0.6),
+        marker=dict(size=5, color=COLORS["primary"]),
+        fill="tozeroy",
+        fillcolor="rgba(5, 150, 105, 0.08)",
+        hovertemplate="<b>%{x|%d %b %Y}</b><br>Arrivals: <b>%{y:,.0f} Qtl</b><extra></extra>",
     ))
-    fig = _apply_theme(fig, f"Mandi Arrival Trend{subtitle}", height=340)
+    fig = _apply_theme(fig, f"Mandi Arrival Trend{subtitle}", height=350)
     fig.update_layout(xaxis_title="Date", yaxis_title="Arrival Quantity (Qtl)", showlegend=False)
     return fig
 
@@ -267,19 +275,19 @@ def create_msp_gap_chart(df: pd.DataFrame) -> go.Figure:
     fig = go.Figure(go.Bar(
         x=grp["MSP Gap"], y=grp["Crop"],
         orientation="h",
-        marker=dict(color=grp["Color"], cornerradius=4),
+        marker=dict(color=grp["Color"], cornerradius=6),
         text=grp["MSP Gap"].apply(lambda v: f"₹{v:+,.0f}"),
         textposition="outside",
         cliponaxis=False,
         textfont=dict(size=10, family="'Inter', sans-serif"),
-        hovertemplate="<b>%{y}</b><br>MSP Gap: ₹%{x:,.0f}<extra></extra>",
+        hovertemplate="<b>%{y}</b><br>MSP Gap: <b>₹%{x:,.0f}</b><extra></extra>",
     ))
     fig.add_vline(x=0, line_dash="dash", line_color=COLORS["neutral"], line_width=1.5)
     fig = _apply_theme(fig, "Average MSP Gap by Crop (Modal Price − MSP)", height=380)
     min_x = min(grp["MSP Gap"].min() * 1.25, -100) if not grp.empty else -100
     max_x = max(grp["MSP Gap"].max() * 1.25, 100) if not grp.empty else 100
     fig.update_layout(
-        xaxis=dict(**AXIS_STYLE, title="MSP Gap (₹/Qtl)  |  + Above MSP  |  − Below MSP", range=[min_x, max_x]),
+        xaxis=dict(**AXIS_STYLE, title="MSP Gap (₹/Qtl)  |  + Above Floor  |  − Below Floor", range=[min_x, max_x]),
         yaxis=dict(**AXIS_STYLE, title=""),
     )
     return fig
@@ -310,12 +318,12 @@ def create_price_crash_rate(df: pd.DataFrame) -> go.Figure:
         text="Crash Rate %",
     )
     fig.update_traces(
-        marker=dict(color=colors, cornerradius=4),
+        marker=dict(color=colors, cornerradius=6),
         texttemplate="%{y:.1f}%",
         textposition="outside",
         cliponaxis=False,
         textfont=dict(size=11, family="'Inter', sans-serif"),
-        hovertemplate="<b>%{x}</b><br>Crash Rate: %{y:.1f}%<extra></extra>",
+        hovertemplate="<b>%{x}</b><br>Crash Rate: <b>%{y:.1f}%</b><extra></extra>",
     )
     fig = _apply_theme(fig, "Price Crash Rate by Crop (Modal Price < MSP)", height=350)
     max_rate = grp["Crash Rate %"].max() if not grp.empty else 100
@@ -343,15 +351,17 @@ def create_price_trend(df: pd.DataFrame, crop: str, mandi: str) -> go.Figure:
     fig.add_trace(go.Scatter(
         x=grp["date"], y=grp["modal_price"],
         mode="lines", name="Modal Price",
-        line=dict(color=COLORS["primary"], width=2),
-        hovertemplate="<b>%{x|%d %b %Y}</b><br>Modal: ₹%{y:,.0f}<extra></extra>",
+        line=dict(color=COLORS["primary"], width=2.5, shape="spline", smoothing=0.6),
+        fill="tozeroy",
+        fillcolor="rgba(5, 150, 105, 0.06)",
+        hovertemplate="<b>%{x|%d %b %Y}</b><br>Modal: <b>₹%{y:,.0f}</b><extra></extra>",
     ))
     if "msp" in grp.columns and grp["msp"].notna().any():
         fig.add_trace(go.Scatter(
             x=grp["date"], y=grp["msp"],
-            mode="lines", name="MSP",
+            mode="lines", name="MSP Floor",
             line=dict(color=COLORS["accent"], width=2, dash="dot"),
-            hovertemplate="<b>%{x|%d %b %Y}</b><br>MSP: ₹%{y:,.0f}<extra></extra>",
+            hovertemplate="<b>%{x|%d %b %Y}</b><br>MSP Floor: <b>₹%{y:,.0f}</b><extra></extra>",
         ))
 
     label_parts = []
@@ -361,18 +371,26 @@ def create_price_trend(df: pd.DataFrame, crop: str, mandi: str) -> go.Figure:
         label_parts.append(mandi)
     subtitle = " – " + " / ".join(label_parts) if label_parts else ""
 
-    fig = _apply_theme(fig, f"Price Trend: Modal Price vs MSP{subtitle}", height=360)
+    fig = _apply_theme(fig, f"Price Trend: Modal Realization vs MSP{subtitle}", height=360)
     fig.update_layout(
         xaxis_title="Date",
         yaxis_title="Price (₹/Qtl)",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            bgcolor="rgba(255,255,255,0.9)",
+            bordercolor="#e2e8f0",
+            borderwidth=1,
+        ),
     )
     return fig
 
 
 def create_price_spread(df: pd.DataFrame, prices_df: pd.DataFrame) -> go.Figure:
     """Box/bar chart – price spread by crop."""
-    # Use prices_df if available; fall back to approximation
     if not prices_df.empty and "price_spread" in prices_df.columns and "crop_name" in prices_df.columns:
         src = prices_df.dropna(subset=["price_spread", "crop_name"])
         fig = px.box(
@@ -384,7 +402,6 @@ def create_price_spread(df: pd.DataFrame, prices_df: pd.DataFrame) -> go.Figure:
         fig.update_layout(xaxis_title="Crop", yaxis_title="Price Spread (₹/Qtl)")
         return fig
 
-    # Approximation: use price_vs_msp range per crop
     if df.empty or "price_vs_msp" not in df.columns:
         return _empty_fig("Price spread data unavailable.")
 
@@ -403,7 +420,8 @@ def create_price_spread(df: pd.DataFrame, prices_df: pd.DataFrame) -> go.Figure:
         labels={"spread": "Price Spread (₹/Qtl)", "crop_name": "Crop"},
     )
     fig.update_traces(
-        hovertemplate="<b>%{x}</b><br>Spread: ₹%{y:,.0f}<extra></extra>",
+        marker=dict(cornerradius=6),
+        hovertemplate="<b>%{x}</b><br>Spread: <b>₹%{y:,.0f}</b><extra></extra>",
     )
     fig = _apply_theme(fig, "Price Spread (Max − Min Modal Price) by Crop", height=360)
     fig.update_layout(xaxis_title="Crop", yaxis_title="Price Spread (₹/Qtl)")
@@ -428,13 +446,15 @@ def create_transit_by_warehouse(transport_df: pd.DataFrame) -> go.Figure:
 
     fig = px.bar(
         grp, x="Warehouse", y="Avg Transit (hrs)",
-        color_discrete_sequence=[COLORS["primary"]],
+        color_discrete_sequence=[COLORS["info"]],
         labels={"Avg Transit (hrs)": "Avg Transit Time (hrs)"},
     )
     fig.add_hline(y=24, line_dash="dash", line_color=COLORS["danger"],
-                  annotation_text="24h threshold", annotation_position="top right")
+                  annotation_text="24h threshold", annotation_position="top right",
+                  annotation_font_color=COLORS["danger"])
     fig.update_traces(
-        hovertemplate="<b>%{x}</b><br>Avg Transit: %{y:.1f} hrs<extra></extra>",
+        marker=dict(cornerradius=6),
+        hovertemplate="<b>%{x}</b><br>Avg Transit: <b>%{y:.1f} hrs</b><extra></extra>",
     )
     fig = _apply_theme(fig, "Average Transit Time by Warehouse", height=360)
     fig.update_layout(xaxis_title="Warehouse", yaxis_title="Avg Transit Time (hrs)")
@@ -460,7 +480,8 @@ def create_distance_by_warehouse(transport_df: pd.DataFrame) -> go.Figure:
         color_discrete_sequence=[COLORS["secondary"]],
     )
     fig.update_traces(
-        hovertemplate="<b>%{x}</b><br>Avg Distance: %{y:.1f} km<extra></extra>",
+        marker=dict(cornerradius=6),
+        hovertemplate="<b>%{x}</b><br>Avg Distance: <b>%{y:.1f} km</b><extra></extra>",
     )
     fig = _apply_theme(fig, "Average Distance by Warehouse", height=340)
     fig.update_layout(xaxis_title="Warehouse", yaxis_title="Avg Distance (km)")
@@ -479,9 +500,9 @@ def create_transit_distribution(transport_df: pd.DataFrame) -> go.Figure:
     fig = go.Figure(go.Histogram(
         x=vals,
         nbinsx=40,
-        marker_color=COLORS["primary"],
-        opacity=0.82,
-        hovertemplate="Hours: %{x:.1f}<br>Count: %{y}<extra></extra>",
+        marker=dict(color=COLORS["info"], cornerradius=4),
+        opacity=0.85,
+        hovertemplate="Hours: <b>%{x:.1f}</b><br>Trip Count: <b>%{y}</b><extra></extra>",
     ))
     fig.add_vline(x=24, line_dash="dash", line_color=COLORS["danger"], line_width=2,
                   annotation_text="24h threshold", annotation_position="top right",
@@ -502,13 +523,14 @@ def create_warehouse_volume(transport_df: pd.DataFrame, main_df: pd.DataFrame) -
 
     fig = px.bar(
         grp, x="Warehouse", y=y_col,
-        color_discrete_sequence=[COLORS["primary"]],
+        color_discrete_sequence=[COLORS["info"]],
         labels={y_col: y_label},
     )
     fig.update_traces(
-        hovertemplate="<b>%{x}</b><br>" + y_label + ": %{y:,}<extra></extra>",
+        marker=dict(cornerradius=6),
+        hovertemplate="<b>%{x}</b><br>" + y_label + ": <b>%{y:,}</b><extra></extra>",
     )
-    fig = _apply_theme(fig, "Trip Volume by Warehouse", height=320)
+    fig = _apply_theme(fig, "Trip Volume by Logistics Warehouse", height=320)
     fig.update_layout(xaxis_title="Warehouse", yaxis_title=y_label)
     return fig
 
@@ -516,7 +538,7 @@ def create_warehouse_volume(transport_df: pd.DataFrame, main_df: pd.DataFrame) -
 # ── Weather Charts ────────────────────────────────────────────────────────────
 
 def create_rainfall_arrival_dual(daily_df: pd.DataFrame) -> go.Figure:
-    """Dual-axis line – rainfall vs daily arrivals."""
+    """Dual-axis chart – soft rainfall bars vs smooth arrival trend line."""
     if daily_df.empty:
         return _empty_fig("No weather data available.")
 
@@ -526,10 +548,9 @@ def create_rainfall_arrival_dual(daily_df: pd.DataFrame) -> go.Figure:
         fig.add_trace(go.Bar(
             x=daily_df["date"], y=daily_df["total_rainfall_mm"],
             name="Rainfall (mm)",
-            marker_color=COLORS["secondary"],
-            opacity=0.65,
+            marker=dict(color="rgba(2, 132, 199, 0.45)", cornerradius=4),
             yaxis="y",
-            hovertemplate="<b>%{x|%d %b %Y}</b><br>Rainfall: %{y:.1f} mm<extra></extra>",
+            hovertemplate="<b>%{x|%d %b %Y}</b><br>Rainfall: <b>%{y:.1f} mm</b><extra></extra>",
         ))
 
     if "total_arrival_qtl" in daily_df.columns:
@@ -537,16 +558,16 @@ def create_rainfall_arrival_dual(daily_df: pd.DataFrame) -> go.Figure:
             x=daily_df["date"], y=daily_df["total_arrival_qtl"],
             name="Daily Arrivals (Qtl)",
             mode="lines",
-            line=dict(color=COLORS["primary"], width=2),
+            line=dict(color=COLORS["primary"], width=2.5, shape="spline", smoothing=0.6),
             yaxis="y2",
-            hovertemplate="<b>%{x|%d %b %Y}</b><br>Arrivals: %{y:,.0f} Qtl<extra></extra>",
+            hovertemplate="<b>%{x|%d %b %Y}</b><br>Arrivals: <b>%{y:,.0f} Qtl</b><extra></extra>",
         ))
 
-    fig = _apply_theme(fig, "Rainfall and Crop Arrival Trend", height=360)
+    fig = _apply_theme(fig, "Rainfall Impact on Daily Crop Inflows", height=360)
     _axis_base = dict(
-        gridcolor=COLORS["border"],
+        gridcolor="#f1f5f9",
         gridwidth=1,
-        linecolor=COLORS["border"],
+        linecolor="#e2e8f0",
         tickfont=dict(size=11, color=COLORS["text_muted"]),
         title_font=dict(size=12, color=COLORS["text"]),
         zeroline=False,
@@ -555,7 +576,16 @@ def create_rainfall_arrival_dual(daily_df: pd.DataFrame) -> go.Figure:
         xaxis_title="Date",
         yaxis=dict(**_axis_base, title="Rainfall (mm)", showgrid=True),
         yaxis2=dict(**_axis_base, title="Daily Arrivals (Qtl)", overlaying="y", side="right", showgrid=False),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            bgcolor="rgba(255,255,255,0.9)",
+            bordercolor="#e2e8f0",
+            borderwidth=1,
+        ),
     )
     return fig
 
@@ -580,9 +610,9 @@ def create_rainfall_scatter(daily_df: pd.DataFrame) -> go.Figure:
         x=src["total_rainfall_mm"],
         y=src["total_arrival_qtl"],
         mode="markers",
-        marker=dict(color=COLORS["primary"], size=7, opacity=0.65),
-        hovertemplate="Rainfall: %{x:.1f} mm<br>Arrivals: %{y:,.0f} Qtl<extra></extra>",
-        name="Daily",
+        marker=dict(color=COLORS["primary"], size=8, opacity=0.7, line=dict(width=1, color="#ffffff")),
+        hovertemplate="Rainfall: <b>%{x:.1f} mm</b><br>Arrivals: <b>%{y:,.0f} Qtl</b><extra></extra>",
+        name="Daily Readings",
     ))
 
     # Manual OLS trendline via numpy
@@ -594,19 +624,19 @@ def create_rainfall_scatter(daily_df: pd.DataFrame) -> go.Figure:
         fig.add_trace(go.Scatter(
             x=x_range, y=m * x_range + b,
             mode="lines",
-            line=dict(color=COLORS["accent"], width=2, dash="dash"),
+            line=dict(color=COLORS["accent"], width=2.5, dash="dash"),
             name="Trend (OLS)",
             hoverinfo="skip",
         ))
     except Exception:
         pass
-    fig = _apply_theme(fig, f"Rainfall vs Crop Arrivals  |  Correlation: {corr:.3f}", height=360)
+    fig = _apply_theme(fig, f"Rainfall vs Arrivals Correlation (r = {corr:.3f})", height=360)
     fig.update_layout(
         xaxis_title="Total Rainfall (mm)",
         yaxis_title="Total Arrivals (Qtl)",
         annotations=[dict(
             x=0.02, y=-0.18, xref="paper", yref="paper",
-            text="Note: Correlation indicates statistical association, not causation.",
+            text="Note: Pearson correlation denotes linear association, not causation.",
             showarrow=False,
             font=dict(size=10, color=COLORS["neutral"]),
             align="left",
@@ -616,37 +646,37 @@ def create_rainfall_scatter(daily_df: pd.DataFrame) -> go.Figure:
 
 
 def create_temperature_trend(daily_df: pd.DataFrame) -> go.Figure:
-    """Line – temperature over time."""
+    """Line – temperature over time with spline."""
     if daily_df.empty or "avg_temperature_c" not in daily_df.columns:
         return _empty_fig("Temperature data unavailable.")
 
     fig = go.Figure(go.Scatter(
         x=daily_df["date"], y=daily_df["avg_temperature_c"],
         mode="lines",
-        line=dict(color="#e05c2e", width=2),
+        line=dict(color="#ea580c", width=2.5, shape="spline", smoothing=0.6),
         fill="tozeroy",
-        fillcolor="rgba(224,92,46,0.08)",
-        hovertemplate="<b>%{x|%d %b %Y}</b><br>Temp: %{y:.1f}°C<extra></extra>",
+        fillcolor="rgba(234, 88, 12, 0.08)",
+        hovertemplate="<b>%{x|%d %b %Y}</b><br>Avg Temp: <b>%{y:.1f}°C</b><extra></extra>",
     ))
-    fig = _apply_theme(fig, "Average Daily Temperature (°C)", height=300)
+    fig = _apply_theme(fig, "Daily Average Temperature Trend (°C)", height=300)
     fig.update_layout(xaxis_title="Date", yaxis_title="Temperature (°C)", showlegend=False)
     return fig
 
 
 def create_humidity_trend(daily_df: pd.DataFrame) -> go.Figure:
-    """Line – humidity over time."""
+    """Line – humidity over time with spline."""
     if daily_df.empty or "avg_humidity_percent" not in daily_df.columns:
         return _empty_fig("Humidity data unavailable.")
 
     fig = go.Figure(go.Scatter(
         x=daily_df["date"], y=daily_df["avg_humidity_percent"],
         mode="lines",
-        line=dict(color="#3d7ab5", width=2),
+        line=dict(color="#0284c7", width=2.5, shape="spline", smoothing=0.6),
         fill="tozeroy",
-        fillcolor="rgba(61,122,181,0.08)",
-        hovertemplate="<b>%{x|%d %b %Y}</b><br>Humidity: %{y:.1f}%<extra></extra>",
+        fillcolor="rgba(2, 132, 199, 0.08)",
+        hovertemplate="<b>%{x|%d %b %Y}</b><br>Avg Humidity: <b>%{y:.1f}%</b><extra></extra>",
     ))
-    fig = _apply_theme(fig, "Average Daily Humidity (%)", height=300)
+    fig = _apply_theme(fig, "Daily Average Humidity Trend (%)", height=300)
     fig.update_layout(xaxis_title="Date", yaxis_title="Humidity (%)", showlegend=False)
     return fig
 

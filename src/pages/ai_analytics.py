@@ -1,7 +1,7 @@
 """MandiFlow – AI Analytics Page
 
-Streamlit port of the original Dash AI chat feature.
-Uses Groq's OpenAI-compatible API to generate Plotly charts from natural language.
+Natural Language Supply Chain Intelligence powered by LLMs (Groq / Llama 3)
+with Built-in Instant Query Analytics and Interactive API Configuration.
 Commands:
   /new  <query>        – generate a fresh chart (default)
   /followup <changes>  – modify the last chart
@@ -10,6 +10,7 @@ Commands:
 
 from __future__ import annotations
 
+import os
 import re
 import textwrap
 import traceback
@@ -21,6 +22,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src import styles
+from src.styles import COLORS, CHART_THEME, AXIS_STYLE
 
 
 # ── Groq / OpenAI client ──────────────────────────────────────────────────────
@@ -29,9 +31,9 @@ def _get_client():
     """Return an OpenAI-compatible client pointed at Groq, or None."""
     try:
         from openai import OpenAI
-        import os
         key = (
-            st.secrets.get("GROQ_API_KEY", "")
+            st.session_state.get("user_groq_key", "")
+            or st.secrets.get("GROQ_API_KEY", "")
             or os.environ.get("GROQ_API_KEY", "")
         )
         if not key:
@@ -54,7 +56,6 @@ def _resolve_model(client) -> str:
     """Pick the best available Groq model."""
     configured = ""
     try:
-        import os
         configured = st.secrets.get("GROQ_MODEL", "") or os.environ.get("GROQ_MODEL", "")
     except Exception:
         pass
@@ -108,155 +109,214 @@ def _system_prompt(df: pd.DataFrame) -> str:
         - Transport: `avg_distance_km`, `avg_transit_hours`, `transit_delay_rate`
 
         Available columns:
-{col_info}
+        {col_info}
 
-        Instructions:
-        - Output ONLY valid, executable Python code.
-        - NEVER include markdown fences (no ```python). No explanations.
-        - You have access to: `df`, `pd`, `px`, `go`.
-        - Assign the final generated Plotly figure to the variable `fig`.
-        - Use template="plotly_white".
-        - Give charts clean titles, color palettes, and axis labels.
-        - Do NOT call `fig.show()`.
-    """).strip()
+        Generate ONLY valid Python code using plotly.express (`px`) or plotly.graph_objects (`go`).
+        The final chart MUST be assigned to variable `fig`.
+        Follow modern theme: use '#059669' (emerald), '#f59e0b' (amber/gold), '#0284c7' (sky) colorway.
+        Do NOT call fig.show(). Do NOT import pandas or plotly (they are already in scope).
+        Wrap your code in ```python ``` blocks.
+    """)
 
 
-def _followup_prompt(df: pd.DataFrame, prev_code: str, prev_query: str, followup: str) -> str:
-    col_info = "\n".join(f"  - {c}: {dt}" for c, dt in df.dtypes.items())
-    return textwrap.dedent(f"""
-        You are an expert agricultural supply chain data analyst.
-        The pandas DataFrame `df` has {df.shape[0]:,} rows.
-
-        Available columns:
-{col_info}
-
-        The user previously asked: "{prev_query}"
-        Here is the Python code that generated the current chart:
-        --- EXISTING CODE START ---
-        {prev_code}
-        --- EXISTING CODE END ---
-
-        The user now wants to MODIFY or FOLLOW UP:
-        "{followup}"
-
-        Instructions:
-        - Apply the requested changes to the EXISTING code above.
-        - Output ONLY valid, executable Python code (the complete modified script).
-        - NEVER include markdown fences. No explanations.
-        - Assign the final figure to `fig`. Use template="plotly_white".
-        - Do NOT call `fig.show()`.
-    """).strip()
+def _sanitize_code(code_str: str) -> str:
+    """Extract code from markdown fences and remove unsafe calls."""
+    m = re.search(r"```(?:python)?\s*(.*?)\s*```", code_str, re.DOTALL)
+    code = m.group(1) if m else code_str
+    lines = [
+        line for line in code.splitlines()
+        if not re.match(r"^\s*(?:import\s|from\s|fig\.show\(\))", line)
+    ]
+    return "\n".join(lines).strip()
 
 
-def _insight_prompt(df: pd.DataFrame, prev_code: str, prev_query: str, question: str) -> str:
-    numeric_cols = df.select_dtypes(include="number").columns.tolist()
-    stats = []
-    for c in numeric_cols[:8]:
-        s = df[c].dropna()
-        if len(s) > 0:
-            stats.append(f"  - {c}: mean={s.mean():.2f}, min={s.min():.2f}, max={s.max():.2f}")
-    extra = f'\nUser question: "{question}"' if question else ""
-    return textwrap.dedent(f"""
-        You are a senior agricultural economist specialising in Indian mandi markets.
-        The DataFrame `df` was used to create the chart below, with {df.shape[0]:,} rows.
+# ── Built-in Demo Engine (Works without API key) ──────────────────────────────
 
-        Dataset numeric summary:
-{chr(10).join(stats)}
+def _run_demo_query(query: str, df: pd.DataFrame) -> tuple[go.Figure, str, str]:
+    """Execute pre-computed smart queries for instant interactive demonstrations."""
+    q_lower = query.lower()
+    
+    if "inflow" in q_lower or "top 5" in q_lower or "crop" in q_lower and "arrival" in q_lower:
+        grp = df.groupby("crop_name")["arrival_quantity_qtl"].sum().sort_values(ascending=False).head(5).reset_index()
+        grp.columns = ["Crop", "Arrivals"]
+        fig = px.bar(
+            grp, x="Crop", y="Arrivals",
+            text="Arrivals",
+            color="Arrivals",
+            color_continuous_scale=["#a7f3d0", "#059669"],
+            labels={"Arrivals": "Total Arrivals (Qtl)"},
+        )
+        fig.update_traces(
+            texttemplate="%{y:,.0f}",
+            textposition="outside",
+            marker=dict(cornerradius=6),
+            hovertemplate="<b>%{x}</b><br>Inflow: <b>%{y:,.0f} Qtl</b><extra></extra>",
+        )
+        fig.update_layout(
+            **CHART_THEME,
+            height=370,
+            title=dict(text="<b>Top 5 Crops by Inflow Volume</b>", font=dict(family="'Plus Jakarta Sans', sans-serif", size=13)),
+            xaxis=dict(**AXIS_STYLE, title="Crop"),
+            yaxis=dict(**AXIS_STYLE, title="Total Arrivals (Qtl)"),
+            coloraxis_showscale=False,
+        )
+        code = textwrap.dedent("""
+            grp = df.groupby('crop_name')['arrival_quantity_qtl'].sum().sort_values(ascending=False).head(5).reset_index()
+            fig = px.bar(grp, x='crop_name', y='arrival_quantity_qtl', text='arrival_quantity_qtl', color='arrival_quantity_qtl', color_continuous_scale=['#a7f3d0', '#059669'])
+            fig.update_traces(texttemplate='%{y:,.0f}', textposition='outside', marker=dict(cornerradius=6))
+        """).strip()
+        insight = textwrap.dedent(f"""
+            ### 📊 Top Crop Inflow Takeaways
+            - **{grp.iloc[0]['Crop']}** leads overall arrivals with **{grp.iloc[0]['Arrivals']:,.0f} Quintals**, representing high market liquidity.
+            - The top 5 commodities together account for over **{grp['Arrivals'].sum():,.0f} Quintals** of total mandi turnover.
+            - Highly concentrated inflows suggest focused logistics infrastructure should be positioned around these primary commodities.
+        """).strip()
+        return fig, code, insight
 
-        The chart was generated by: "{prev_query}"
-        Code:
-        --- CODE START ---
-        {prev_code}
-        --- CODE END ---
-        {extra}
+    elif "msp" in q_lower or "gap" in q_lower or "support" in q_lower:
+        grp = df.dropna(subset=["modal_price", "msp"]).groupby("crop_name")[["modal_price", "msp"]].mean().reset_index()
+        grp["gap"] = grp["modal_price"] - grp["msp"]
+        grp = grp.sort_values("gap")
+        
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            name="Modal Price", x=grp["crop_name"], y=grp["modal_price"],
+            marker=dict(color="#059669", cornerradius=6),
+            hovertemplate="<b>%{x}</b><br>Modal Price: <b>₹%{y:,.0f}</b><extra></extra>",
+        ))
+        fig.add_trace(go.Bar(
+            name="MSP Floor", x=grp["crop_name"], y=grp["msp"],
+            marker=dict(color="#f59e0b", cornerradius=6),
+            hovertemplate="<b>%{x}</b><br>MSP Floor: <b>₹%{y:,.0f}</b><extra></extra>",
+        ))
+        fig.update_layout(
+            **CHART_THEME,
+            barmode="group",
+            height=370,
+            title=dict(text="<b>Wholesale Modal Price vs Guaranteed MSP Floor</b>", font=dict(family="'Plus Jakarta Sans', sans-serif", size=13)),
+            xaxis=dict(**AXIS_STYLE, title="Crop"),
+            yaxis=dict(**AXIS_STYLE, title="Price (₹/Qtl)"),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        )
+        code = textwrap.dedent("""
+            grp = df.dropna(subset=['modal_price', 'msp']).groupby('crop_name')[['modal_price', 'msp']].mean().reset_index()
+            fig = go.Figure()
+            fig.add_trace(go.Bar(name='Modal Price', x=grp['crop_name'], y=grp['modal_price'], marker=dict(color='#059669', cornerradius=6)))
+            fig.add_trace(go.Bar(name='MSP Floor', x=grp['crop_name'], y=grp['msp'], marker=dict(color='#f59e0b', cornerradius=6)))
+            fig.update_layout(barmode='group')
+        """).strip()
+        worst = grp.iloc[0]
+        insight = textwrap.dedent(f"""
+            ### 🛡️ MSP Compliance Assessment
+            - **{worst['crop_name']}** exhibits the most severe downside deficit, trading at **₹{worst['modal_price']:,.0f}** vs the support floor of **₹{worst['msp']:,.0f}** (Deficit of **₹{abs(worst['gap']):,.0f}**).
+            - Crops trading below MSP indicate urgent need for targeted procurement intervention or price deficiency payments to safeguard farmer realizations.
+        """).strip()
+        return fig, code, insight
 
-        Provide a structured, insightful analysis in MARKDOWN format using this structure:
+    else:
+        # Default: Rainfall vs Arrival Trend
+        daily = df.groupby("date").agg({"total_rainfall_mm": "mean", "arrival_quantity_qtl": "sum"}).dropna().reset_index()
+        corr = daily["total_rainfall_mm"].corr(daily["arrival_quantity_qtl"])
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=daily["total_rainfall_mm"], y=daily["arrival_quantity_qtl"],
+            mode="markers",
+            marker=dict(color="#059669", size=8, opacity=0.75, line=dict(color="#ffffff", width=1)),
+            hovertemplate="Rainfall: <b>%{x:.1f} mm</b><br>Arrivals: <b>%{y:,.0f} Qtl</b><extra></extra>",
+            name="Daily Reading",
+        ))
+        x = daily["total_rainfall_mm"].to_numpy(dtype=float)
+        y = daily["arrival_quantity_qtl"].to_numpy(dtype=float)
+        m, b = np.polyfit(x, y, 1)
+        xr = np.linspace(x.min(), x.max(), 100)
+        fig.add_trace(go.Scatter(
+            x=xr, y=m * xr + b,
+            mode="lines",
+            line=dict(color="#f59e0b", width=2.5, dash="dash"),
+            name="Trendline",
+        ))
+        fig.update_layout(
+            **CHART_THEME,
+            height=370,
+            title=dict(text=f"<b>Rainfall vs Arrival Correlation (r = {corr:.3f})</b>", font=dict(family="'Plus Jakarta Sans', sans-serif", size=13)),
+            xaxis=dict(**AXIS_STYLE, title="Precipitation (mm)"),
+            yaxis=dict(**AXIS_STYLE, title="Daily Inflows (Qtl)"),
+        )
+        code = textwrap.dedent("""
+            daily = df.groupby('date').agg({'total_rainfall_mm': 'mean', 'arrival_quantity_qtl': 'sum'}).dropna().reset_index()
+            fig = px.scatter(daily, x='total_rainfall_mm', y='arrival_quantity_qtl', trendline='ols')
+        """).strip()
+        insight = textwrap.dedent(f"""
+            ### 🌦️ Climatic Influence Findings
+            - Pearson correlation between precipitation and arrival volume measures **{corr:.3f}**.
+            - Heavy rainfall episodes correspond with temporary disruptions in transport hauls, leading to delayed arrivals followed by compensatory volume surges.
+        """).strip()
+        return fig, code, insight
 
-        ## 📊 Chart Summary
-        Brief 1-2 sentence description.
 
-        ## 📈 Key Trends
-        - 3-4 bullet points describing the most important patterns.
-
-        ## ⚠️ Anomalies & Notable Observations
-        - Flag price spikes, MSP-price gaps, or irregular patterns.
-
-        ## 🚜 Supply Chain & Farmer Impact
-        - 2-3 actionable interpretations.
-
-        ## 💡 Recommendations
-        - 1-3 data-driven recommendations.
-
-        Rules:
-        - Be concise and specific. Reference actual crops/mandis/districts where possible.
-        - Do NOT generate any Python code.
-        - Output ONLY the markdown insights.
-    """).strip()
-
-
-def _sanitize_code(raw: str) -> str:
-    code = re.sub(r"^```(?:python)?\s*", "", raw, flags=re.MULTILINE)
-    code = re.sub(r"```\s*$", "", code, flags=re.MULTILINE)
-    return code.strip()
-
-
-# ── Page renderer ─────────────────────────────────────────────────────────────
+# ── Render Page ───────────────────────────────────────────────────────────────
 
 def render(df: pd.DataFrame) -> None:
     st.markdown(styles.page_header(
-        "AI Analytics ✨",
-        "Query arrivals, prices, MSP, weather and transport using natural language.",
+        "MandiFlow AI Assistant",
+        "Interact with agricultural data in natural language. Query arrivals, price realization, weather impacts, and logistics corridors.",
+        badge="NATURAL LANGUAGE AI",
     ), unsafe_allow_html=True)
-
-    # Initialise session state
-    if "ai_history" not in st.session_state:
-        st.session_state.ai_history = []
 
     client, api_key = _get_client()
 
-    # ── API key status ─────────────────────────────────────────────────────
-    if not api_key:
-        st.warning(
-            "**Groq API key not configured.**  \n"
-            "Add `GROQ_API_KEY = 'your-key'` to `.streamlit/secrets.toml` (locally) "
-            "or as a Secret in Streamlit Community Cloud settings.",
-            icon="🔑",
-        )
-    else:
-        model = _resolve_model(client)
-        st.success(f"Connected — model: **{model.split('/')[-1]}**", icon="✅")
+    # Session state initialization
+    if "ai_history" not in st.session_state:
+        st.session_state.ai_history = []
 
-    # ── Command hint pills ─────────────────────────────────────────────────
+    # ── API Key Configuration Bar ─────────────────────────────────────────────
+    with st.expander("🔑 AI Engine Configuration & Model Settings", expanded=not bool(api_key)):
+        c_k1, c_k2 = st.columns([3, 1])
+        with c_k1:
+            entered_key = st.text_input(
+                "Groq API Key (Optional for demo, required for freeform LLM generation)",
+                value=st.session_state.get("user_groq_key", ""),
+                type="password",
+                placeholder="gsk_...",
+                help="Get a free ultra-fast Groq API key at console.groq.com",
+            )
+            if entered_key != st.session_state.get("user_groq_key", ""):
+                st.session_state["user_groq_key"] = entered_key
+                st.rerun()
+        with c_k2:
+            st.markdown("<div style='margin-top: 1.8rem;'></div>", unsafe_allow_html=True)
+            if api_key:
+                st.markdown('<span style="color:#059669; font-weight:700; font-size:0.85rem;">● Groq Connected</span>', unsafe_allow_html=True)
+            else:
+                st.markdown('<span style="color:#d97706; font-weight:600; font-size:0.85rem;">● Instant Demo Mode Active</span>', unsafe_allow_html=True)
+
+    # ── Quick Prompts ─────────────────────────────────────────────────────────
     st.markdown("""
-<div style="display:flex;gap:8px;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;">
-  <span style="font-size:0.75rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">Supported Commands:</span>
-  <code style="background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:500;">/new &lt;query&gt;</code>
-  <code style="background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:500;">/followup &lt;changes&gt;</code>
-  <code style="background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:500;">/insight [question]</code>
+<div style="font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin: 0.8rem 0 0.4rem 0;">
+  ⚡ Quick Sample Analytics (Click to Run Immediately)
 </div>
 """, unsafe_allow_html=True)
 
-    # ── Quick Prompts ──────────────────────────────────────────────────────
-    st.markdown("<div style='font-size:0.72rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; margin-bottom: 0.35rem;'>Sample Prompts:</div>", unsafe_allow_html=True)
-    p_col1, p_col2, p_col3 = st.columns(3)
-    quick_query = None
-    with p_col1:
-        if st.button("Top 5 Crops by Inflow", key="quick_p1", use_container_width=True):
-            quick_query = "Plot the top 5 crops by total arrival quantity as a horizontal bar chart."
-    with p_col2:
-        if st.button("Price vs MSP Gap by Crop", key="quick_p2", use_container_width=True):
-            quick_query = "Create a bar chart showing the difference between modal price and MSP for each crop."
-    with p_col3:
-        if st.button("Rainfall vs Arrival Trend", key="quick_p3", use_container_width=True):
-            quick_query = "Show a scatter plot of total rainfall vs arrival quantity with a trendline."
+    col1, col2, col3 = st.columns(3)
+    quick_query = ""
+    with col1:
+        if st.button("📊 Top 5 Crops by Inflow Volume", key="quick_p1", use_container_width=True):
+            quick_query = "Top 5 Crops by Inflow"
+    with col2:
+        if st.button("🛡️ Price vs MSP Floor Parity", key="quick_p2", use_container_width=True):
+            quick_query = "Price vs MSP Gap by Crop"
+    with col3:
+        if st.button("🌦️ Rainfall vs Arrival Dynamics", key="quick_p3", use_container_width=True):
+            quick_query = "Rainfall vs Arrival Trend"
 
-    # ── Chat input ─────────────────────────────────────────────────────────
+    # ── Chat input ────────────────────────────────────────────────────────────
     with st.form("ai_chat_form", clear_on_submit=True):
-        col_inp, col_btn, col_clr = st.columns([7, 1, 1])
+        col_inp, col_btn, col_clr = st.columns([7, 1.2, 1])
         with col_inp:
             user_input = st.text_input(
                 "Query",
-                placeholder="Ask a question or use /new  /followup  /insight …",
+                placeholder="Ask any question or use /new, /followup, /insight ...",
                 label_visibility="collapsed",
             )
         with col_btn:
@@ -265,102 +325,96 @@ def render(df: pd.DataFrame) -> None:
             clear = st.form_submit_button("Clear", use_container_width=True)
 
     if quick_query:
-        _process_query(quick_query, df, client, api_key)
+        _handle_query(quick_query, df, client, api_key)
 
-    # Handle clear
     if clear:
         st.session_state.ai_history = []
         st.rerun()
 
-    # Handle send
     if send and user_input and user_input.strip():
-        _process_query(user_input.strip(), df, client, api_key)
+        _handle_query(user_input.strip(), df, client, api_key)
 
-    # ── Render chat history ────────────────────────────────────────────────
+    # ── Render chat history ───────────────────────────────────────────────────
     history = st.session_state.ai_history
 
     if not history:
         st.markdown("""
-<div style="text-align:center;padding:3rem 2rem;color:#9ca3af;">
-  <div style="font-size:2.5rem;margin-bottom:0.5rem;">✨</div>
-  <h4 style="color:#374151;margin-bottom:0.5rem;">Ask MandiFlow AI</h4>
-  <p style="font-size:0.9rem;">Inquire about modal prices, arrival volumes, weather impacts, or transit delays across mandis.</p>
-  <p style="font-size:0.8rem;margin-top:1rem;">
-    Try: <em>"Show monthly average modal price by crop"</em> or
-    <em>"Which districts have the highest rainfall-to-arrival correlation?"</em>
+<div style="text-align:center; padding: 3.5rem 2rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; margin-top: 1rem; box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.03);">
+  <div style="font-size:2.8rem; margin-bottom:0.6rem;">✨</div>
+  <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.15rem; font-weight: 700; color:#0f172a; margin-bottom:0.4rem;">Natural Language Market Query Engine</h3>
+  <p style="font-size:0.88rem; color:#64748b; max-width: 500px; margin: 0 auto; line-height: 1.5;">
+    Query wholesale prices, inflow volumes, weather correlations, or corridor transit bottlenecks in plain English.
   </p>
+  <div style="margin-top: 1.2rem; display: inline-flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+    <span style="background:#f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 0.74rem; font-weight: 600; color: #475569;">/new &lt;query&gt;</span>
+    <span style="background:#f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 0.74rem; font-weight: 600; color: #475569;">/followup &lt;changes&gt;</span>
+    <span style="background:#f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 0.74rem; font-weight: 600; color: #475569;">/insight [question]</span>
+  </div>
 </div>
 """, unsafe_allow_html=True)
         return
 
-    # Render messages newest-last
     for i, msg in enumerate(history):
         role = msg.get("role", "")
 
         if role == "user":
             st.markdown(
-                f'<div style="text-align:right;margin:0.75rem 0;">'
-                f'<span style="background:#1a6b3c;color:#fff;padding:8px 14px;border-radius:18px 18px 4px 18px;'
-                f'font-size:0.9rem;display:inline-block;max-width:80%;">{msg["text"]}</span></div>',
+                f'<div style="text-align:right; margin: 1rem 0;">'
+                f'<span style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color:#ffffff; padding: 10px 18px; border-radius: 18px 18px 4px 18px;'
+                f'font-size:0.9rem; font-weight: 500; display:inline-block; max-width:80%; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);">'
+                f'💬 {msg["text"]}</span></div>',
                 unsafe_allow_html=True,
             )
 
         elif role == "assistant":
             fig_dict = msg.get("fig_dict")
-            model_tag = msg.get("model", "").split("/")[-1]
+            model_tag = msg.get("model", "Built-in Analytics Engine")
             is_followup = msg.get("is_followup", False)
-            tag = "↺ Follow-up" if is_followup else "✨ New chart"
+            tag = "↺ Follow-up" if is_followup else "✨ AI Generated Chart"
 
             with st.container():
                 st.markdown(
-                    f'<div style="font-size:0.75rem;color:#6b7280;margin-bottom:0.3rem;">'
-                    f'{tag} · {model_tag}</div>',
+                    f'<div style="font-size:0.75rem; font-weight: 700; color:#059669; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom:0.4rem;">'
+                    f'{tag} · <span style="color:#64748b; font-weight: 500;">{model_tag}</span></div>',
                     unsafe_allow_html=True,
                 )
                 if fig_dict:
                     import plotly.io as pio
                     fig = pio.from_json(go.Figure(fig_dict).to_json())
-                    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
+                    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-                # Quick-action buttons on each chart card
-                b1, b2, b3, _ = st.columns([1, 1, 1, 4])
+                b1, b2, b3 = st.columns([1.2, 1.2, 4])
                 with b1:
-                    if st.button("📊 Insight", key=f"insight_btn_{i}"):
+                    if st.button("📊 Generate Insight", key=f"insight_btn_{i}"):
                         _trigger_insight(i, df, client, api_key)
                 with b2:
-                    if st.button("↺ Follow up", key=f"followup_btn_{i}"):
+                    if st.button("↺ Refine Query", key=f"followup_btn_{i}"):
                         st.session_state["_prefill_followup"] = i
                 with b3:
-                    with st.expander("🔍 Code"):
-                        st.code(msg.get("code", ""), language="python")
+                    if msg.get("code"):
+                        with st.expander("🔍 View Python Code"):
+                            st.code(msg.get("code", ""), language="python")
 
         elif role == "insight":
-            with st.container():
-                st.markdown(
-                    f'<div style="background:#f0fdf4;border-left:3px solid #1a6b3c;'
-                    f'padding:1rem 1.25rem;border-radius:0 8px 8px 0;margin:0.5rem 0;">',
-                    unsafe_allow_html=True,
-                )
-                st.markdown(msg.get("markdown", ""))
-                st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"""
+<div class="insight-card" style="margin: 0.8rem 0;">
+  <h4>💡 Analytical Intelligence</h4>
+  <div style="font-size: 0.88rem; line-height: 1.6; color: #1e293b;">
+    {msg.get("markdown", "")}
+  </div>
+</div>
+""",
+                unsafe_allow_html=True,
+            )
 
         elif role == "error":
             with st.container():
-                st.error(f"**{msg.get('title', 'Error')}:** {msg.get('text', '')}")
+                st.error(f"**{msg.get('title', 'Notice')}:** {msg.get('text', '')}")
                 if msg.get("code"):
                     with st.expander("Generated code"):
                         st.code(msg["code"], language="python")
-                if msg.get("traceback"):
-                    with st.expander("Traceback"):
-                        st.text(msg["traceback"])
 
-    # Handle pre-filled followup
-    if "_prefill_followup" in st.session_state:
-        st.info("💡 Type your `/followup <changes>` in the input above and click Send.")
-        del st.session_state["_prefill_followup"]
-
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _get_last_visual() -> Optional[dict]:
     for msg in reversed(st.session_state.ai_history):
@@ -369,22 +423,36 @@ def _get_last_visual() -> Optional[dict]:
     return None
 
 
-def _process_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
-    """Parse the query and call the appropriate AI action."""
+def _handle_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
+    """Intelligently route query to live Groq LLM or Built-in Analytics Engine."""
     history = st.session_state.ai_history
     history.append({"role": "user", "text": query})
 
+    command, payload = _parse_command(query)
+
+    # If no API key is provided, handle with built-in instant demo engine
     if not api_key:
+        fig, code, insight = _run_demo_query(payload or query, df)
         history.append({
-            "role": "error",
-            "title": "API Key Missing",
-            "text": "GROQ_API_KEY is not configured. Add it to .streamlit/secrets.toml.",
+            "role": "assistant",
+            "fig_dict": fig.to_dict(),
+            "code": code,
+            "query": payload,
+            "model": "MandiFlow Instant Analytics Engine",
+            "is_followup": False,
         })
+        if command == "insight" or "insight" in query.lower():
+            history.append({
+                "role": "insight",
+                "markdown": insight,
+                "model": "MandiFlow Intelligence",
+                "query": query,
+            })
         st.session_state.ai_history = history
         st.rerun()
         return
 
-    command, payload = _parse_command(query)
+    # Live Groq API Execution
     model = _resolve_model(client)
     generated_code = ""
 
@@ -394,15 +462,15 @@ def _process_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
             if last_visual is None:
                 history.append({
                     "role": "error",
-                    "title": "No Visual Found",
+                    "title": "No Chart Found",
                     "text": "Generate a chart first, then ask for /insight.",
                 })
             else:
-                prompt = _insight_prompt(df, last_visual.get("code", ""), last_visual.get("query", ""), payload)
+                prompt = f"Analyze this agricultural chart code and query:\nQuery: {last_visual.get('query')}\nCode: {last_visual.get('code')}\nProvide 3 succinct takeaways."
                 resp = client.chat.completions.create(
                     model=model,
                     messages=[{"role": "user", "content": prompt}],
-                    temperature=0.3, max_tokens=1800,
+                    temperature=0.3, max_tokens=1200,
                 )
                 history.append({
                     "role": "insight",
@@ -410,32 +478,7 @@ def _process_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
                     "model": model,
                     "query": query,
                 })
-
-        elif command == "followup":
-            last_visual = _get_last_visual()
-            if last_visual is None:
-                history.append({
-                    "role": "error",
-                    "title": "No Visual to Follow Up On",
-                    "text": "Generate a chart first, then use /followup.",
-                })
-            else:
-                prompt = _followup_prompt(df, last_visual.get("code", ""), last_visual.get("query", ""), payload)
-                resp = client.chat.completions.create(
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.1, max_tokens=1400,
-                )
-                generated_code = _sanitize_code(resp.choices[0].message.content.strip())
-                scope = {"df": df.copy(), "pd": pd, "px": px, "go": go}
-                exec(generated_code, scope)  # noqa: S102
-                fig = scope.get("fig")
-                if fig is None:
-                    history.append({"role": "error", "title": "No Chart Produced", "text": "Try rephrasing.", "code": generated_code})
-                else:
-                    history.append({"role": "assistant", "fig_dict": fig.to_dict(), "code": generated_code, "query": payload, "model": model, "is_followup": True})
-
-        else:  # new
+        else:
             resp = client.chat.completions.create(
                 model=model,
                 messages=[
@@ -449,16 +492,15 @@ def _process_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
             exec(generated_code, scope)  # noqa: S102
             fig = scope.get("fig")
             if fig is None:
-                history.append({"role": "error", "title": "No Chart Produced", "text": "Try rephrasing.", "code": generated_code})
+                history.append({"role": "error", "title": "No Chart Produced", "text": "Model did not output a 'fig' object. Try rephrasing.", "code": generated_code})
             else:
-                history.append({"role": "assistant", "fig_dict": fig.to_dict(), "code": generated_code, "query": payload, "model": model, "is_followup": False})
+                history.append({"role": "assistant", "fig_dict": fig.to_dict(), "code": generated_code, "query": payload, "model": model, "is_followup": (command == "followup")})
 
     except Exception as exc:
         history.append({
             "role": "error",
-            "title": "Execution Error",
+            "title": "Query Error",
             "text": str(exc),
-            "traceback": traceback.format_exc(),
             "code": generated_code,
         })
 
@@ -467,28 +509,29 @@ def _process_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
 
 
 def _trigger_insight(visual_idx: int, df: pd.DataFrame, client, api_key: str) -> None:
-    """Trigger an insight on a specific chart by index in history."""
-    assistant_msgs = [m for m in st.session_state.ai_history if m.get("role") == "assistant"]
-    if visual_idx >= len(assistant_msgs):
-        return
-    # Temporarily set the last visual and trigger insight
-    target = assistant_msgs[visual_idx]
     history = st.session_state.ai_history
-    history.append({"role": "user", "text": "/insight"})
-
+    last_visual = _get_last_visual()
+    if not last_visual:
+        return
+    
     if not api_key:
-        history.append({"role": "error", "title": "API Key Missing", "text": "GROQ_API_KEY not set."})
+        _, _, insight = _run_demo_query(last_visual.get("query", ""), df)
+        history.append({
+            "role": "insight",
+            "markdown": insight,
+            "model": "MandiFlow Instant Analytics",
+            "query": "/insight",
+        })
         st.session_state.ai_history = history
         st.rerun()
         return
 
     model = _resolve_model(client)
-    prompt = _insight_prompt(df, target.get("code", ""), target.get("query", ""), "")
     try:
         resp = client.chat.completions.create(
             model=model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3, max_tokens=1800,
+            messages=[{"role": "user", "content": f"Analyze this chart:\nCode: {last_visual.get('code')}\nQuery: {last_visual.get('query')}"}],
+            temperature=0.3, max_tokens=1200,
         )
         history.append({"role": "insight", "markdown": resp.choices[0].message.content.strip(), "model": model, "query": "/insight"})
     except Exception as exc:

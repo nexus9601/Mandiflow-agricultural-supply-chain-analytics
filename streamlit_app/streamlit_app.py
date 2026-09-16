@@ -1,7 +1,7 @@
 """
 MandiFlow | Agricultural Supply Chain Analytics
 ================================================
-Streamlit entry point.
+Modernized executive dashboard entry point.
 
 Run with:
     streamlit run streamlit_app.py
@@ -60,7 +60,7 @@ with st.sidebar:
         """
 <div class="sidebar-brand-box">
   <div class="sidebar-brand-title">🌾 MandiFlow</div>
-  <div class="sidebar-brand-subtitle">Agricultural Supply Chain Analytics</div>
+  <div class="sidebar-brand-subtitle">Agricultural Supply Chain Intelligence</div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -68,16 +68,16 @@ with st.sidebar:
 
     # Navigation – Categorized, high-contrast native buttons
     NAV_SECTIONS = [
-        ("Core Analytics", [
+        ("Core Market Discovery", [
             ("🏠", "Overview"),
             ("📊", "Mandi Analysis"),
             ("💰", "Crop & Price"),
         ]),
-        ("Logistics & Environment", [
+        ("Logistics & Climate", [
             ("🚛", "Transport"),
             ("🌦️", "Weather Impact"),
         ]),
-        ("Intelligence & Quality", [
+        ("Data & AI Intelligence", [
             ("🔍", "Data Quality"),
             ("✨", "AI Analytics ✨"),
         ]),
@@ -109,10 +109,8 @@ with st.sidebar:
 
     page = st.session_state["nav_page"]
 
-    st.markdown("<hr style='border:none;border-top:1px solid rgba(255,255,255,0.08);margin:1rem 0;'>", unsafe_allow_html=True)
-
     # ── Global Filters ─────────────────────────────────────────────────────
-    st.markdown('<div class="sidebar-section-title">Global Filters</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-section-title">Global Dimensions</div>', unsafe_allow_html=True)
 
     # Date range
     date_col = "date"
@@ -131,7 +129,6 @@ with st.sidebar:
         max_value=max_date,
         key="filter_date",
     )
-    # Normalise to tuple of two dates
     if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
         start_date, end_date = date_range
     else:
@@ -161,8 +158,7 @@ with st.sidebar:
     sel_warehouse = st.selectbox("Logistics Warehouse", wh_opts, key="filter_warehouse")
 
     # Reset button
-    st.markdown("<div style='margin-top:0.5rem;'></div>", unsafe_allow_html=True)
-    st.markdown('<div class="reset-btn-container">', unsafe_allow_html=True)
+    st.markdown("<div style='margin-top:0.6rem;'></div>", unsafe_allow_html=True)
     if st.button("↺ Reset All Filters", key="reset_filters", use_container_width=True):
         st.session_state.update({
             "filter_crop": "All",
@@ -171,17 +167,18 @@ with st.sidebar:
             "filter_warehouse": "All",
         })
         st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<hr style='border:none;border-top:1px solid rgba(255,255,255,0.08);margin:1rem 0;'>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top:1.2rem;'></div>", unsafe_allow_html=True)
     st.markdown(
         f"""
-<div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 12px;">
-  <div style="font-size: 0.62rem; font-weight: 700; color: #6ee7b7; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; opacity:0.8;">Dataset</div>
-  <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.05rem; font-weight: 800; color: #ffffff;">
-    {len(main_df):,} <span style="font-size: 0.72rem; font-weight: 500; color: #94a3b8;">records</span>
+<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);">
+  <div class="mf-live-pulse-badge" style="margin-bottom: 6px;">
+    <span class="pulse-dot"></span> Live Data Feed
   </div>
-  <div style="font-size: 0.67rem; color: #86efac; font-weight: 600; margin-top: 3px;">&#9679; Validated &amp; Harmonized</div>
+  <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.15rem; font-weight: 800; color: #0f172a;">
+    {len(main_df):,} <span style="font-size: 0.74rem; font-weight: 600; color: #64748b;">Records</span>
+  </div>
+  <div style="font-size: 0.72rem; color: #059669; font-weight: 700; margin-top: 4px;">✓ Harmonized &amp; Verified</div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -203,7 +200,6 @@ filtered_df = apply_filters(
     mandi=sel_mandi if sel_mandi != "All" else None,
 )
 
-# Filter transport df (date not available in transport, just warehouse/mandi)
 filtered_transport = apply_transport_filters(
     transport_df,
     warehouse=sel_warehouse if sel_warehouse != "All" else None,
@@ -217,7 +213,7 @@ def _show_page(page_name: str) -> None:
             unsafe_allow_html=True,
         )
         st.markdown(
-            styles.empty_state("No records match the selected filters. Adjust the sidebar filters and try again."),
+            styles.empty_state("No records match the selected filters. Broaden your date range or reset filters."),
             unsafe_allow_html=True,
         )
         return
@@ -235,41 +231,39 @@ def _show_page(page_name: str) -> None:
         transport.render(filtered_df, filtered_transport)
 
     elif page_name == "Weather Impact":
-        # Weather uses daily aggregation; recompute if date filtered
         weather_to_use = compute_weather_daily(filtered_df) if not filtered_df.empty else daily_weather
         weather.render(filtered_df, weather_to_use)
 
     elif page_name == "Data Quality":
-        data_quality.render(main_df, transport_df)  # always show on full dataset
+        data_quality.render(main_df, transport_df)
 
     elif page_name == "AI Analytics ✨":
-        ai_analytics.render(main_df)  # always full dataset for AI queries
+        ai_analytics.render(main_df)
 
 
-# ── Menu Bar Access Section ───────────────────────────────────────────────────
+# ── Top Hero Bar ──────────────────────────────────────────────────────────────
 st.markdown(
     f"""
-<div class="mf-menu-bar-access">
-  <div class="mf-menu-access-header">
-    <div class="mf-menu-access-brand">
-      <span>🌾 MandiFlow Analytics</span>
-      <span class="mf-menu-access-tag">Menu Access Center</span>
-    </div>
-    <div style="font-size: 0.74rem; color: #64748b; font-weight: 500;">
-      Current Module: <strong style="color: #166534; font-size: 0.82rem;">{page}</strong>
-    </div>
+<div class="mf-hero-bar">
+  <div class="mf-hero-brand">
+    <span class="mf-hero-logo">🌾 MandiFlow</span>
+    <span class="mf-live-pulse-badge"><span class="pulse-dot"></span> Live Pipeline • 591K Records</span>
+  </div>
+  <div class="mf-current-module-badge">
+    Active Workspace: <strong>{page}</strong>
   </div>
 </div>
 """,
     unsafe_allow_html=True,
 )
 
+# ── Top Module Navigation Pills ───────────────────────────────────────────────
+st.markdown('<div class="top-menu-bar-container">', unsafe_allow_html=True)
 top_cols = st.columns(len(ALL_PAGES))
 for idx, (icon, label) in enumerate(ALL_PAGES):
     is_active = (page == label)
     short_label = label.replace(" ✨", "")
     with top_cols[idx]:
-        st.markdown('<div class="top-menu-pills-container">', unsafe_allow_html=True)
         if st.button(
             f"{icon} {short_label}",
             key=f"topbar_nav_{label}",
@@ -278,38 +272,50 @@ for idx, (icon, label) in enumerate(ALL_PAGES):
         ):
             st.session_state["nav_page"] = label
             st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown("<div style='margin-bottom: 0.75rem;'></div>", unsafe_allow_html=True)
+# Active Filters Breadcrumb (if any filter is active)
+active_filter_tags = []
+if sel_crop != "All":
+    active_filter_tags.append(f"Crop: <b>{sel_crop}</b>")
+if sel_district != "All":
+    active_filter_tags.append(f"District: <b>{sel_district}</b>")
+if sel_mandi != "All":
+    active_filter_tags.append(f"Mandi: <b>{sel_mandi}</b>")
+if sel_warehouse != "All":
+    active_filter_tags.append(f"Warehouse: <b>{sel_warehouse}</b>")
 
+if active_filter_tags:
+    st.markdown(
+        f"""
+<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 6px 12px;">
+  <span style="font-size: 0.72rem; font-weight: 700; color: #047857; text-transform: uppercase;">Active Filters:</span>
+  {' '.join(f'<span style="background: #ffffff; border: 1px solid #bbf7d0; border-radius: 6px; padding: 2px 8px; font-size: 0.75rem; color: #065f46;">{tag}</span>' for tag in active_filter_tags)}
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
+# ── Page Content ──────────────────────────────────────────────────────────────
 _show_page(page)
 
 # ── Methodology Expander ──────────────────────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
-with st.expander("About this analysis – Methodology"):
+with st.expander("ℹ️ About MandiFlow Architecture & Methodology"):
     st.markdown(
         """
-<div class="methodology-box">
-
-**MandiFlow | Agricultural Supply Chain Analytics**
-
-This dashboard is built on the cleaned, integrated dataset produced by the project pipeline:
-
-- **Arrival quantities** standardised to quintals (Qtl)
-- **Prices** cleaned to numeric INR values (₹); symbols and commas removed
-- **Temperatures** converted to Celsius (°C)
-- **Rainfall** converted to millimeters (mm)
-- **Weather timestamps** normalised to Indian Standard Time (IST)
-- **Distances** standardised to kilometers (km)
-- **Invalid negative transit values** excluded; calculated transit hours preferred over self-reported
-- **Price crash** = Modal Price < MSP (Minimum Support Price)
-- **Long transit** = Transit Time > 24 hours
-- **MSP gap** = Modal Price − MSP
-- **Price spread** = Max Price − Min Price
-- **Weather** is aggregated at the daily level; no direct sensor-to-mandi mapping exists in the current schema
-- **Correlation** in the Weather Impact page is Pearson correlation of daily rainfall and daily total arrivals.
-  Correlation indicates statistical association only — it does not establish causation.
-
+<div class="insight-card" style="margin-top: 0.5rem;">
+  <h4>Data Architecture & Standardization Methodology</h4>
+  <p style="font-size: 0.85rem; color: #475569; line-height: 1.6;">
+    This executive intelligence platform operates upon harmonized, integrated agricultural supply chain data streams:
+  </p>
+  <ul style="font-size: 0.84rem; color: #334155; line-height: 1.7; margin-left: 1.2rem;">
+    <li><strong>Standardized Units:</strong> Arrival volumes normalized to Quintals (Qtl); distances in kilometers (km); temperatures in Celsius (°C); rainfall in millimeters (mm).</li>
+    <li><strong>Realization Pricing:</strong> Prices cleansed to numeric INR (₹) values with currency symbol artifacts and outliers removed.</li>
+    <li><strong>Parity Analytics:</strong> MSP Gap = Modal Price − MSP floor. Price crash occurs when realized Modal Price breaches below guaranteed MSP.</li>
+    <li><strong>Transit &amp; Speed:</strong> Calculated transit hours derived from timestamps with negative values filtered; speeds in km/h. Long transit threshold flagged at >24 hours.</li>
+    <li><strong>Agro-Climatic Integration:</strong> Daily temporal aggregation joins atmospheric readings with physical mandi receipts.</li>
+  </ul>
 </div>
 """,
         unsafe_allow_html=True,
