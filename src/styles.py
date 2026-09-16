@@ -630,6 +630,7 @@ div[data-testid="stHorizontalBlock"] {
     border-radius: 12px !important;
     box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02) !important;
     overflow: hidden !important;
+    margin-bottom: 0.85rem !important;
 }
 .stExpander header {
     font-family: 'Plus Jakarta Sans', sans-serif !important;

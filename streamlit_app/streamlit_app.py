@@ -169,7 +169,20 @@ with st.sidebar:
 
 page = st.session_state["nav_page"]
 
-# ── Filter Bar (above content, only for data pages) ───────────────────────────
+# ── Top Hero Bar (MandiFlow Heading Division) ──────────────────────────────────
+st.markdown(f"""
+<div class="mf-hero-bar">
+  <div class="mf-hero-brand">
+    <span class="mf-hero-logo">🌾 MandiFlow</span>
+    <span class="mf-live-pulse-badge"><span class="pulse-dot"></span> Live Pipeline &bull; {len(main_df):,} Records</span>
+  </div>
+  <div class="mf-current-module-badge">
+    Active Workspace: <strong>{page.replace(" ✨", "")}</strong>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Filter Bar (below heading division, only for data pages) ──────────────────
 AI_ONLY_PAGES = {"AI Analytics ✨", "Data Quality"}
 FILTER_APPLICABLE = page not in AI_ONLY_PAGES
 
@@ -260,19 +273,6 @@ except Exception:
     filtered_transport = transport_df.copy() if not transport_df.empty else pd.DataFrame()
 
 filters = dict(date_range=(start_date, end_date), crop=sel_crop, district=sel_district, mandi=sel_mandi)
-
-# ── Top Hero Bar ──────────────────────────────────────────────────────────────
-st.markdown(f"""
-<div class="mf-hero-bar">
-  <div class="mf-hero-brand">
-    <span class="mf-hero-logo">🌾 MandiFlow</span>
-    <span class="mf-live-pulse-badge"><span class="pulse-dot"></span> Live Pipeline &bull; {len(main_df):,} Records</span>
-  </div>
-  <div class="mf-current-module-badge">
-    Active Workspace: <strong>{page.replace(" ✨", "")}</strong>
-  </div>
-</div>
-""", unsafe_allow_html=True)
 
 # ── Top Tab Navigation Pills ───────────────────────────────────────────────────
 ALL_PAGES = [
