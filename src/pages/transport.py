@@ -41,20 +41,20 @@ def render(df: pd.DataFrame, transport_df: pd.DataFrame) -> None:
     c_l, c_r = st.columns(2)
     with c_l:
         st.plotly_chart(charts.create_transit_by_warehouse(transport_df),
-                        use_container_width=True, config={"displayModeBar": False})
+                        width='stretch', config={"displayModeBar": False})
     with c_r:
         st.plotly_chart(charts.create_distance_by_warehouse(transport_df),
-                        use_container_width=True, config={"displayModeBar": False})
+                        width='stretch', config={"displayModeBar": False})
 
     # ── Chart Row 2 ───────────────────────────────────────────────────────────
     st.markdown(styles.section_header("Transit Duration Distribution & Volumes", "CORRIDOR VELOCITY"), unsafe_allow_html=True)
     c_l2, c_r2 = st.columns(2)
     with c_l2:
         st.plotly_chart(charts.create_transit_distribution(transport_df),
-                        use_container_width=True, config={"displayModeBar": False})
+                        width='stretch', config={"displayModeBar": False})
     with c_r2:
         st.plotly_chart(charts.create_warehouse_volume(transport_df, df),
-                        use_container_width=True, config={"displayModeBar": False})
+                        width='stretch', config={"displayModeBar": False})
 
     # ── Mandi-to-Warehouse Route Table ────────────────────────────────────────
     st.markdown(styles.section_header("Mandi-to-Warehouse Corridor Performance", "ROUTE BENCHMARKS"), unsafe_allow_html=True)
@@ -117,7 +117,7 @@ def _render_from_integrated(df: pd.DataFrame) -> None:
                      title="Average Transit Hours by Mandi (from integrated dataset)")
         fig.update_traces(marker=dict(cornerradius=6))
         fig.update_layout(**CHART_THEME, xaxis=dict(**AXIS_STYLE), yaxis=dict(**AXIS_STYLE))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
 
 def _logistics_risk(transport_df: pd.DataFrame) -> None:

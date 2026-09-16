@@ -36,22 +36,22 @@ def render(df: pd.DataFrame, daily_df: pd.DataFrame) -> None:
     # ── Chart Row 1 ───────────────────────────────────────────────────────────
     st.markdown(styles.section_header("Precipitation & Daily Inflow Overlay", "DUAL AXIS"), unsafe_allow_html=True)
     st.plotly_chart(charts.create_rainfall_arrival_dual(daily_df),
-                    use_container_width=True, config={"displayModeBar": False})
+                    width='stretch', config={"displayModeBar": False})
 
     # ── Chart Row 2 ───────────────────────────────────────────────────────────
     st.markdown(styles.section_header("Climatic Distribution & Correlation Analysis", "ENVIRONMENTAL TRENDS"), unsafe_allow_html=True)
     c_l, c_r = st.columns(2)
     with c_l:
         st.plotly_chart(charts.create_rainfall_scatter(daily_df),
-                        use_container_width=True, config={"displayModeBar": False})
+                        width='stretch', config={"displayModeBar": False})
     with c_r:
         st.plotly_chart(charts.create_temperature_trend(daily_df),
-                        use_container_width=True, config={"displayModeBar": False})
+                        width='stretch', config={"displayModeBar": False})
 
     # ── Humidity ──────────────────────────────────────────────────────────────
     st.markdown(styles.section_header("Ambient Moisture Trajectory", "HUMIDITY"), unsafe_allow_html=True)
     st.plotly_chart(charts.create_humidity_trend(daily_df),
-                    use_container_width=True, config={"displayModeBar": False})
+                    width='stretch', config={"displayModeBar": False})
 
     # ── Weather Impact Summary ────────────────────────────────────────────────
     _render_weather_summary(daily_df, kpis)

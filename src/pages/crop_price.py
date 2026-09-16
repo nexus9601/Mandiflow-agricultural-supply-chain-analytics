@@ -40,20 +40,20 @@ def render(df: pd.DataFrame, prices_df: pd.DataFrame, filters: dict) -> None:
     c_l, c_r = st.columns(2)
     with c_l:
         st.plotly_chart(charts.create_price_vs_msp_grouped(df),
-                        use_container_width=True, config={"displayModeBar": False})
+                        width='stretch', config={"displayModeBar": False})
     with c_r:
         st.plotly_chart(charts.create_msp_gap_chart(df),
-                        use_container_width=True, config={"displayModeBar": False})
+                        width='stretch', config={"displayModeBar": False})
 
     # ── Chart Row 2 ───────────────────────────────────────────────────────────
     st.markdown(styles.section_header("Price Volatility & Downside Risk", "RISK MATRIX"), unsafe_allow_html=True)
     c_l2, c_r2 = st.columns(2)
     with c_l2:
         st.plotly_chart(charts.create_price_crash_rate(df),
-                        use_container_width=True, config={"displayModeBar": False})
+                        width='stretch', config={"displayModeBar": False})
     with c_r2:
         st.plotly_chart(charts.create_price_spread(df, prices_df),
-                        use_container_width=True, config={"displayModeBar": False})
+                        width='stretch', config={"displayModeBar": False})
 
     # ── Price Trend ───────────────────────────────────────────────────────────
     st.markdown(styles.section_header("Historical Price Realization vs MSP Trend", "TIME SERIES"), unsafe_allow_html=True)
@@ -75,7 +75,7 @@ def render(df: pd.DataFrame, prices_df: pd.DataFrame, filters: dict) -> None:
         st.markdown(styles.empty_state("No price history available for the selected crop and mandi."), unsafe_allow_html=True)
     else:
         st.plotly_chart(charts.create_price_trend(trend_df, trend_crop, trend_mandi),
-                        use_container_width=True, config={"displayModeBar": False})
+                        width='stretch', config={"displayModeBar": False})
 
     # ── Price Risk Table ──────────────────────────────────────────────────────
     st.markdown(styles.section_header("Crop Price Risk & Floor Summary", "DATA TABLE"), unsafe_allow_html=True)

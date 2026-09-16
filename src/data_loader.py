@@ -140,7 +140,7 @@ def load_transport_df() -> pd.DataFrame:
 
     # Parse times
     for col in ["departure_time", "arrival_time"]:
-        df[col] = pd.to_datetime(df[col], errors="coerce", dayfirst=True)
+        df[col] = pd.to_datetime(df[col], errors="coerce", dayfirst=False)
 
     # Calculated transit hours
     calc = (df["arrival_time"] - df["departure_time"]).dt.total_seconds() / 3600

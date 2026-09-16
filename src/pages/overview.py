@@ -41,20 +41,20 @@ def render(df: pd.DataFrame, transport_df: pd.DataFrame, prices_df: pd.DataFrame
         crop_opts = ["All"] + sorted(df["crop_name"].dropna().unique().tolist()) if "crop_name" in df.columns else ["All"]
         sel_crop = st.selectbox("Filter Inflow Trend by Crop", crop_opts, key="ov_crop_sel")
         fdf = df if sel_crop == "All" else df[df["crop_name"] == sel_crop]
-        st.plotly_chart(charts.create_arrival_trend(fdf, sel_crop), use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(charts.create_arrival_trend(fdf, sel_crop), width='stretch', config={"displayModeBar": False})
 
     with col_right:
-        st.plotly_chart(charts.create_crop_distribution(df), use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(charts.create_crop_distribution(df), width='stretch', config={"displayModeBar": False})
 
     # ── Chart Row 2 ──────────────────────────────────────────────────────────
     st.markdown(styles.section_header("Mandi Volume & Price vs MSP Parity", "MARKET DISCOVERY"), unsafe_allow_html=True)
     col_l, col_r = st.columns(2)
 
     with col_l:
-        st.plotly_chart(charts.create_top_mandis(df), use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(charts.create_top_mandis(df), width='stretch', config={"displayModeBar": False})
 
     with col_r:
-        st.plotly_chart(charts.create_price_vs_msp_grouped(df), use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(charts.create_price_vs_msp_grouped(df), width='stretch', config={"displayModeBar": False})
 
     # ── Key Insights ─────────────────────────────────────────────────────────
     insights = metrics.key_insights(df, transport_df)

@@ -36,9 +36,9 @@ def render(df: pd.DataFrame, filters: dict) -> None:
     c_l, c_r = st.columns(2)
     with c_l:
         top_n = st.slider("Number of mandis to rank", 5, 20, 10, key="mandi_topn")
-        st.plotly_chart(charts.create_top_mandis(df, top_n=top_n), use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(charts.create_top_mandis(df, top_n=top_n), width='stretch', config={"displayModeBar": False})
     with c_r:
-        st.plotly_chart(charts.create_district_distribution(df), use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(charts.create_district_distribution(df), width='stretch', config={"displayModeBar": False})
 
     # ── Mandi Arrival Trend ───────────────────────────────────────────────────
     st.markdown(styles.section_header("Mandi Arrival Time Series", "HISTORICAL TRENDS"), unsafe_allow_html=True)
@@ -60,7 +60,7 @@ def render(df: pd.DataFrame, filters: dict) -> None:
         st.markdown(styles.empty_state("No time-series data available for the chosen Mandi and Crop."), unsafe_allow_html=True)
     else:
         st.plotly_chart(charts.create_mandi_trend(trend_df, sel_mandi, sel_crop),
-                        use_container_width=True, config={"displayModeBar": False})
+                        width='stretch', config={"displayModeBar": False})
 
     # ── Mandi Performance Table ───────────────────────────────────────────────
     st.markdown(styles.section_header("Mandi Operational Performance Summary", "DATA TABLE"), unsafe_allow_html=True)

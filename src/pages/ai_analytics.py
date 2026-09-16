@@ -413,7 +413,7 @@ def render(df: pd.DataFrame) -> None:
                 if fig_dict:
                     import plotly.io as pio
                     fig = pio.from_json(go.Figure(fig_dict).to_json())
-                    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+                    st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
 
                 b1, b2, b3 = st.columns([1.2, 1.2, 4])
                 with b1:
