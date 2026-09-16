@@ -57,15 +57,8 @@ with st.sidebar:
     st.markdown(
         """
 <div class="sidebar-brand-box">
-  <div class="sidebar-logo-icon">🌾</div>
-  <div>
-    <div class="sidebar-brand-title">MandiFlow</div>
-    <div class="sidebar-brand-subtitle">Agricultural Supply Chain</div>
-    <div class="sidebar-status-pill">
-      <span class="sidebar-status-dot"></span>
-      <span>v2.2 Live Analytics</span>
-    </div>
-  </div>
+  <div class="sidebar-brand-title">🌾 MandiFlow</div>
+  <div class="sidebar-brand-subtitle">Agricultural Supply Chain Analytics</div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -145,12 +138,12 @@ with st.sidebar:
     st.markdown("<hr style='border:none;border-top:1px solid #e2e8f0;margin:1rem 0;'>", unsafe_allow_html=True)
     st.markdown(
         f"""
-<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
-  <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px;">Active Pipeline</div>
-  <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.15rem; font-weight: 800; color: #064e3b; line-height: 1.1;">
-    {len(main_df):,} <span style="font-size: 0.72rem; font-weight: 600; color: #64748b;">Records</span>
+<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;">
+  <div style="font-size: 0.68rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">Dataset</div>
+  <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem; font-weight: 700; color: #0f172a;">
+    {len(main_df):,} <span style="font-size: 0.72rem; font-weight: 500; color: #64748b;">records</span>
   </div>
-  <div style="font-size: 0.7rem; color: #059669; font-weight: 600; margin-top: 3px;">● Cleaned & Harmonized</div>
+  <div style="font-size: 0.68rem; color: #166534; font-weight: 600; margin-top: 2px;">● Validated & Harmonized</div>
 </div>
 """,
         unsafe_allow_html=True,

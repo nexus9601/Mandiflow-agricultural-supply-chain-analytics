@@ -22,17 +22,17 @@ def render(df: pd.DataFrame, prices_df: pd.DataFrame, filters: dict) -> None:
     c1, c2, c3, c4, c5, c6 = st.columns(6)
     gap_val = kpis["avg_msp_gap"] or 0
     kpi_data = [
-        (c1, "Avg Modal Price",   metrics.fmt_inr(kpis["avg_modal_price"]),   "emerald", "💰", "Modal Realization"),
-        (c2, "Average MSP",       metrics.fmt_inr(kpis["avg_msp"]),           "amber",   "⚖️", "Support Floor"),
+        (c1, "Avg Modal Price",   metrics.fmt_inr(kpis["avg_modal_price"]),   "emerald", "Modal Realization"),
+        (c2, "Average MSP",       metrics.fmt_inr(kpis["avg_msp"]),           "amber",   "Support Floor"),
         (c3, "Average MSP Gap",   metrics.fmt_inr(kpis["avg_msp_gap"]),
-         "danger" if gap_val < 0 else "emerald", "📉" if gap_val < 0 else "📈", "Gap to MSP"),
-        (c4, "Crash Instances",   metrics.fmt_int(kpis["price_crash_count"]), "danger",  "🚨", "Below Floor"),
-        (c5, "Price Crash Rate",  metrics.fmt_pct(kpis["price_crash_rate"]),  "amber",   "⚡", "Risk Percentage"),
-        (c6, "Avg Price Spread",  metrics.fmt_inr(kpis["avg_price_spread"]),  "sky",     "📊", "Market Volatility"),
+         "danger" if gap_val < 0 else "emerald", "Spread to MSP"),
+        (c4, "Crash Instances",   metrics.fmt_int(kpis["price_crash_count"]), "danger",  "Below Floor"),
+        (c5, "Price Crash Rate",  metrics.fmt_pct(kpis["price_crash_rate"]),  "amber",   "Risk Percentage"),
+        (c6, "Avg Price Spread",  metrics.fmt_inr(kpis["avg_price_spread"]),  "sky",     "Market Volatility"),
     ]
-    for col, label, val, variant, icon, delta in kpi_data:
+    for col, label, val, variant, delta in kpi_data:
         with col:
-            st.markdown(styles.kpi_card(label, val, variant=variant, icon=icon, delta=delta), unsafe_allow_html=True)
+            st.markdown(styles.kpi_card(label, val, variant=variant, delta=delta), unsafe_allow_html=True)
 
     st.markdown("<hr class='mf-divider'>", unsafe_allow_html=True)
 

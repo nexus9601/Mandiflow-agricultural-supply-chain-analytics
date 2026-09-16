@@ -19,16 +19,16 @@ def _base_layout(**kwargs) -> dict:
     return layout
 
 
-def _apply_theme(fig: go.Figure, title: str = "", height: int = 380) -> go.Figure:
+def _apply_theme(fig: go.Figure, title: str = "", height: int = 370) -> go.Figure:
     fig.update_layout(
         **CHART_THEME,
         height=height,
         title=dict(
             text=title,
-            font=dict(size=14, color="#0f172a", family="'Plus Jakarta Sans', sans-serif", weight=700),
+            font=dict(size=13, color="#0f172a", family="'Plus Jakarta Sans', sans-serif", weight=600),
             x=0,
             xanchor="left",
-            pad=dict(l=4, b=10),
+            pad=dict(l=4, b=8),
         ),
         xaxis=dict(**AXIS_STYLE),
         yaxis=dict(**AXIS_STYLE),
@@ -39,7 +39,7 @@ def _apply_theme(fig: go.Figure, title: str = "", height: int = 380) -> go.Figur
 # ── Overview Charts ───────────────────────────────────────────────────────────
 
 def create_arrival_trend(df: pd.DataFrame, crop: str = "All") -> go.Figure:
-    """Daily crop arrival trend line chart with smooth spline curve."""
+    """Daily crop arrival trend line chart with clean solid styling."""
     if df.empty or "date" not in df.columns:
         return _empty_fig("No arrival data available.")
 
@@ -50,9 +50,7 @@ def create_arrival_trend(df: pd.DataFrame, crop: str = "All") -> go.Figure:
     fig.add_trace(go.Scatter(
         x=grp["date"], y=grp["arrivals"],
         mode="lines",
-        fill="tozeroy",
-        fillcolor="rgba(16, 185, 129, 0.08)",
-        line=dict(color=COLORS["primary"], width=2.5, shape="spline", smoothing=1.1),
+        line=dict(color=COLORS["primary"], width=2),
         name="Arrivals",
         hovertemplate="<b>%{x|%d %b %Y}</b><br>Arrivals: %{y:,.0f} Qtl<extra></extra>",
     ))
@@ -123,7 +121,7 @@ def create_top_mandis(df: pd.DataFrame, top_n: int = 10) -> go.Figure:
     fig = px.bar(
         grp, x="Arrivals", y="Mandi",
         orientation="h",
-        color_discrete_sequence=["#10b981"],
+        color_discrete_sequence=[COLORS["primary"]],
         labels={"Arrivals": "Total Arrivals (Qtl)", "Mandi": ""},
         text="Arrivals",
     )

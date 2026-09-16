@@ -116,13 +116,13 @@ def render(df: pd.DataFrame, transport_df: pd.DataFrame) -> None:
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        st.markdown(styles.kpi_card("Total Checks", str(len(checks)), variant="sky", icon="📋", delta="Pipeline Rules"), unsafe_allow_html=True)
+        st.markdown(styles.kpi_card("Total Checks", str(len(checks)), variant="sky", delta="Validation Rules"), unsafe_allow_html=True)
     with c2:
-        st.markdown(styles.kpi_card("Checks Passed", str(good_count), variant="emerald", icon="✅", delta="Zero Anomalies", trend="up"), unsafe_allow_html=True)
+        st.markdown(styles.kpi_card("Checks Passed", str(good_count), variant="emerald", delta="Zero Anomalies", trend="up"), unsafe_allow_html=True)
     with c3:
-        st.markdown(styles.kpi_card("Warnings", str(warn_count), variant="amber", icon="⚠️", delta="Moderate Gaps"), unsafe_allow_html=True)
+        st.markdown(styles.kpi_card("Warnings", str(warn_count), variant="amber", delta="Moderate Gaps"), unsafe_allow_html=True)
     with c4:
-        st.markdown(styles.kpi_card("Critical Issues", str(crit_count), variant="danger", icon="🚨", delta="High Imputation Need", trend="down"), unsafe_allow_html=True)
+        st.markdown(styles.kpi_card("Critical Issues", str(crit_count), variant="danger", delta="High Imputation Need", trend="down"), unsafe_allow_html=True)
 
     st.markdown("<hr class='mf-divider'>", unsafe_allow_html=True)
 

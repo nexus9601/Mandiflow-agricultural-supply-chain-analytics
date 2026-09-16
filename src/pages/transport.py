@@ -20,16 +20,16 @@ def render(df: pd.DataFrame, transport_df: pd.DataFrame) -> None:
     kpis = metrics.transport_kpis(transport_df, df)
     c1, c2, c3, c4, c5, c6 = st.columns(6)
     kpi_data = [
-        (c1, "Total Trips",       metrics.fmt_int(kpis["total_trips"]),        "emerald", "🚚", "Fleet Dispatches"),
-        (c2, "Avg Transit Time",  metrics.fmt_hrs(kpis["avg_transit"]),        "sky",     "⏱️", "Door-to-Mandi"),
-        (c3, "Average Distance",  metrics.fmt_km(kpis["avg_distance"]),        "violet",  "🛣️", "Haul Distance"),
-        (c4, "Long Transit Rate", metrics.fmt_pct(kpis["long_transit_rate"]), "amber",   "⚠️", "> 24h Threshold"),
-        (c5, "Longest Corridor",  str(kpis["longest_route"]),                  "sky",     "🗺️", "Max Distance"),
-        (c6, "Top Warehouse",     str(kpis["top_warehouse"]),                  "emerald", "🏬", "Primary Hub"),
+        (c1, "Total Trips",       metrics.fmt_int(kpis["total_trips"]),        "emerald", "Fleet Dispatches"),
+        (c2, "Avg Transit Time",  metrics.fmt_hrs(kpis["avg_transit"]),        "sky",     "Door-to-Mandi"),
+        (c3, "Average Distance",  metrics.fmt_km(kpis["avg_distance"]),        "default", "Haul Distance"),
+        (c4, "Long Transit Rate", metrics.fmt_pct(kpis["long_transit_rate"]), "amber",   "> 24h Threshold"),
+        (c5, "Longest Corridor",  str(kpis["longest_route"]),                  "sky",     "Max Distance"),
+        (c6, "Top Warehouse",     str(kpis["top_warehouse"]),                  "emerald", "Primary Hub"),
     ]
-    for col, label, val, variant, icon, delta in kpi_data:
+    for col, label, val, variant, delta in kpi_data:
         with col:
-            st.markdown(styles.kpi_card(label, val, variant=variant, icon=icon, delta=delta), unsafe_allow_html=True)
+            st.markdown(styles.kpi_card(label, val, variant=variant, delta=delta), unsafe_allow_html=True)
 
     st.markdown("<hr class='mf-divider'>", unsafe_allow_html=True)
 

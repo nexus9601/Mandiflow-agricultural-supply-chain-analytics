@@ -229,25 +229,25 @@ def render(df: pd.DataFrame) -> None:
     # ── Command hint pills ─────────────────────────────────────────────────
     st.markdown("""
 <div style="display:flex;gap:8px;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;">
-  <span style="font-size:0.75rem;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Supported Commands:</span>
-  <code style="background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">/new &lt;query&gt;</code>
-  <code style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">/followup &lt;changes&gt;</code>
-  <code style="background:#fefce8;color:#a16207;border:1px solid #fef08a;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">/insight [question]</code>
+  <span style="font-size:0.75rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">Supported Commands:</span>
+  <code style="background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:500;">/new &lt;query&gt;</code>
+  <code style="background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:500;">/followup &lt;changes&gt;</code>
+  <code style="background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:500;">/insight [question]</code>
 </div>
 """, unsafe_allow_html=True)
 
     # ── Quick Prompts ──────────────────────────────────────────────────────
-    st.markdown("<div style='font-size:0.72rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin-bottom: 0.35rem;'>Quick Sample Prompts (Click to execute):</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:0.72rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; margin-bottom: 0.35rem;'>Sample Prompts:</div>", unsafe_allow_html=True)
     p_col1, p_col2, p_col3 = st.columns(3)
     quick_query = None
     with p_col1:
-        if st.button("📊 Top 5 Crops by Inflow", key="quick_p1", use_container_width=True):
+        if st.button("Top 5 Crops by Inflow", key="quick_p1", use_container_width=True):
             quick_query = "Plot the top 5 crops by total arrival quantity as a horizontal bar chart."
     with p_col2:
-        if st.button("⚖️ Price vs MSP Gap by Crop", key="quick_p2", use_container_width=True):
+        if st.button("Price vs MSP Gap by Crop", key="quick_p2", use_container_width=True):
             quick_query = "Create a bar chart showing the difference between modal price and MSP for each crop."
     with p_col3:
-        if st.button("🌧️ Rainfall vs Arrival Trend", key="quick_p3", use_container_width=True):
+        if st.button("Rainfall vs Arrival Trend", key="quick_p3", use_container_width=True):
             quick_query = "Show a scatter plot of total rainfall vs arrival quantity with a trendline."
 
     # ── Chat input ─────────────────────────────────────────────────────────

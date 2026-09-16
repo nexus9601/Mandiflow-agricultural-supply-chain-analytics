@@ -21,14 +21,14 @@ def render(df: pd.DataFrame, filters: dict) -> None:
     kpis = metrics.mandi_kpis(df)
     c1, c2, c3, c4 = st.columns(4)
     kpi_data = [
-        (c1, "Active Mandis",       metrics.fmt_int(kpis["n_mandis"]),   "emerald", "🏢", "Trading Centers"),
-        (c2, "Total Inflow Volume", metrics.fmt_qty(kpis["total_volume"]), "emerald", "📦", "Quintals Handled"),
-        (c3, "Top Volume Mandi",    str(kpis["top_mandi"]),              "sky",     "🏆", "Highest Inflow"),
-        (c4, "Dominant District",   str(kpis["top_district"]),           "violet",  "📍", "Catchment Hub"),
+        (c1, "Active Mandis",       metrics.fmt_int(kpis["n_mandis"]),   "emerald", "Reporting Centers"),
+        (c2, "Total Inflow Volume", metrics.fmt_qty(kpis["total_volume"]), "emerald", "Quintals Aggregated"),
+        (c3, "Top Volume Mandi",    str(kpis["top_mandi"]),              "sky",     "Highest Inflow"),
+        (c4, "Dominant District",   str(kpis["top_district"]),           "default", "Catchment Hub"),
     ]
-    for col, label, val, variant, icon, delta in kpi_data:
+    for col, label, val, variant, delta in kpi_data:
         with col:
-            st.markdown(styles.kpi_card(label, val, variant=variant, icon=icon, delta=delta), unsafe_allow_html=True)
+            st.markdown(styles.kpi_card(label, val, variant=variant, delta=delta), unsafe_allow_html=True)
 
     st.markdown("<hr class='mf-divider'>", unsafe_allow_html=True)
 
