@@ -42,7 +42,12 @@ _NUMERIC_COLS = [
 @st.cache_data(show_spinner="Loading dataset…")
 def load_main_df() -> pd.DataFrame:
     """Load and clean the integrated dataset."""
-    df = pd.read_csv(INTEGRATED_PATH, low_memory=False)
+    if not os.path.exists(INTEGRATED_PATH):
+        return pd.DataFrame()
+    try:
+        df = pd.read_csv(INTEGRATED_PATH, low_memory=False)
+    except Exception:
+        return pd.DataFrame()
 
     # Parse date
     df["date"] = pd.to_datetime(df["date"], errors="coerce")

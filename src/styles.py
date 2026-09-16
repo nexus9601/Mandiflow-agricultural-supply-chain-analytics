@@ -718,6 +718,29 @@ div[data-testid="stHorizontalBlock"] {
     color: #0f172a !important;
     border-color: #94a3b8 !important;
 }
+
+/* ── AI Analytics Sidebar Button – Special Emerald Glow ─────────────── */
+[data-testid="stSidebar"] button[key="sb_AI Analytics ✨"],
+[data-testid="stSidebar"] button[data-testid$="AI Analytics ✨"] {
+    background: linear-gradient(135deg, #064e3b 0%, #059669 100%) !important;
+    color: #ffffff !important;
+    border: 1.5px solid #10b981 !important;
+    box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35) !important;
+    font-weight: 700 !important;
+}
+[data-testid="stSidebar"] button[key="sb_AI Analytics ✨"]:hover,
+[data-testid="stSidebar"] button[data-testid$="AI Analytics ✨"]:hover {
+    background: linear-gradient(135deg, #047857 0%, #10b981 100%) !important;
+    box-shadow: 0 6px 20px rgba(5, 150, 105, 0.45) !important;
+    transform: translateX(2px) !important;
+}
+
+/* ── Global Filter Bar Expander ─────────────────────────────────────── */
+[data-testid="stExpander"]:has(summary span:contains("Global Filters")) {
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 12px !important;
+    margin-bottom: 1rem !important;
+}
 </style>
 """
 
