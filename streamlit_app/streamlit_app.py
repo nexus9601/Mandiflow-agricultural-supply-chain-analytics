@@ -17,6 +17,32 @@ for _p in [_HERE, _PARENT]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # Direct fallback if python-dotenv is not installed
+    _env_candidates = [
+        os.path.join(_PARENT, ".env"),
+        os.path.join(_HERE, ".env"),
+        ".env",
+    ]
+    for _ec in _env_candidates:
+        if os.path.exists(_ec):
+            try:
+                with open(_ec, "r", encoding="utf-8") as _f:
+                    for _l in _f:
+                        _l = _l.strip()
+                        if _l and not _l.startswith("#") and "=" in _l:
+                            _k, _v = _l.split("=", 1)
+                            _k = _k.strip()
+                            _v = _v.strip().strip("'\"")
+                            if _k and _k not in os.environ:
+                                os.environ[_k] = _v
+            except Exception:
+                pass
+            break
+
 import pandas as pd
 import streamlit as st
 

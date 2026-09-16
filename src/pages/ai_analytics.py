@@ -31,11 +31,38 @@ def _get_client():
     """Return an OpenAI-compatible client pointed at Groq, or None."""
     try:
         from openai import OpenAI
+
+        # Attempt to load .env if python-dotenv is present
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+        except ImportError:
+            pass
+
         key = (
             st.session_state.get("user_groq_key", "")
             or st.secrets.get("GROQ_API_KEY", "")
             or os.environ.get("GROQ_API_KEY", "")
         )
+
+        # Fallback direct .env lookup if not loaded into env
+        if not key:
+            for candidate in [".env", os.path.join(os.path.dirname(__file__), "..", "..", ".env")]:
+                if os.path.exists(candidate):
+                    try:
+                        with open(candidate, "r", encoding="utf-8") as f:
+                            for line in f:
+                                line = line.strip()
+                                if line.startswith("GROQ_API_KEY="):
+                                    key = line.split("=", 1)[1].strip().strip("'\"")
+                                    if key:
+                                        os.environ["GROQ_API_KEY"] = key
+                                        break
+                    except Exception:
+                        pass
+                if key:
+                    break
+
         if not key:
             return None, ""
         client = OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1")
@@ -269,27 +296,6 @@ def render(df: pd.DataFrame) -> None:
     # Session state initialization
     if "ai_history" not in st.session_state:
         st.session_state.ai_history = []
-
-    # ── API Key Configuration Bar ─────────────────────────────────────────────
-    with st.expander("🔑 AI Engine Configuration & Model Settings", expanded=not bool(api_key)):
-        c_k1, c_k2 = st.columns([3, 1])
-        with c_k1:
-            entered_key = st.text_input(
-                "Groq API Key (Optional for demo, required for freeform LLM generation)",
-                value=st.session_state.get("user_groq_key", ""),
-                type="password",
-                placeholder="gsk_...",
-                help="Get a free ultra-fast Groq API key at console.groq.com",
-            )
-            if entered_key != st.session_state.get("user_groq_key", ""):
-                st.session_state["user_groq_key"] = entered_key
-                st.rerun()
-        with c_k2:
-            st.markdown("<div style='margin-top: 1.8rem;'></div>", unsafe_allow_html=True)
-            if api_key:
-                st.markdown('<span style="color:#059669; font-weight:700; font-size:0.85rem;">● Groq Connected</span>', unsafe_allow_html=True)
-            else:
-                st.markdown('<span style="color:#d97706; font-weight:600; font-size:0.85rem;">● Instant Demo Mode Active</span>', unsafe_allow_html=True)
 
     # ── Quick Prompts ─────────────────────────────────────────────────────────
     st.markdown("""
