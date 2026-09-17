@@ -13,13 +13,15 @@ from __future__ import annotations
 import os
 import re
 import textwrap
-import traceback
+import time
 from typing import Optional
 
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 
 from src import styles
 from src.styles import COLORS, CHART_THEME, AXIS_STYLE
@@ -32,7 +34,6 @@ def _get_client():
     try:
         from openai import OpenAI
 
-        # Attempt to load .env if python-dotenv is present
         try:
             from dotenv import load_dotenv
             load_dotenv()
@@ -45,7 +46,6 @@ def _get_client():
             or os.environ.get("GROQ_API_KEY", "")
         )
 
-        # Fallback direct .env lookup if not loaded into env
         if not key:
             for candidate in [".env", os.path.join(os.path.dirname(__file__), "..", "..", ".env")]:
                 if os.path.exists(candidate):
@@ -163,7 +163,7 @@ def _run_demo_query(query: str, df: pd.DataFrame) -> tuple[go.Figure, str, str]:
     """Execute pre-computed smart queries for instant interactive demonstrations."""
     q_lower = query.lower()
     
-    if "inflow" in q_lower or "top 5" in q_lower or "crop" in q_lower and "arrival" in q_lower:
+    if "inflow" in q_lower or "top 5" in q_lower or ("crop" in q_lower and "arrival" in q_lower):
         grp = df.groupby("crop_name")["arrival_quantity_qtl"].sum().sort_values(ascending=False).head(5).reset_index()
         grp.columns = ["Crop", "Arrivals"]
         fig = px.bar(
@@ -282,209 +282,8 @@ def _run_demo_query(query: str, df: pd.DataFrame) -> tuple[go.Figure, str, str]:
         return fig, code, insight
 
 
-# ── Render Page ───────────────────────────────────────────────────────────────
+# ── Insight Prompts & Summarization ───────────────────────────────────────────
 
-def render(df: pd.DataFrame) -> None:
-    st.markdown(styles.page_header(
-        "MandiFlow AI Assistant",
-        "Interact with agricultural data in natural language. Query arrivals, price realization, weather impacts, and logistics corridors.",
-        badge="NATURAL LANGUAGE AI",
-    ), unsafe_allow_html=True)
-
-    client, api_key = _get_client()
-
-    # Session state initialization
-    if "ai_history" not in st.session_state:
-        st.session_state.ai_history = []
-
-    # ── Quick Prompts ─────────────────────────────────────────────────────────
-    st.markdown("""
-<div style="font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin: 0.8rem 0 0.4rem 0;">
-  ⚡ Quick Sample Analytics (Click to Run Immediately)
-</div>
-""", unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns(3)
-    quick_query = ""
-    with col1:
-        if st.button("📊 Top 5 Crops by Inflow Volume", key="quick_p1", use_container_width=True):
-            quick_query = "Top 5 Crops by Inflow"
-    with col2:
-        if st.button("🛡️ Price vs MSP Floor Parity", key="quick_p2", use_container_width=True):
-            quick_query = "Price vs MSP Gap by Crop"
-    with col3:
-        if st.button("🌦️ Rainfall vs Arrival Dynamics", key="quick_p3", use_container_width=True):
-            quick_query = "Rainfall vs Arrival Trend"
-
-    # ── Chat input ────────────────────────────────────────────────────────────
-    st.markdown("""
-<div style="display: flex; align-items: center; justify-content: space-between; margin: 1.15rem 0 0.45rem 0;">
-  <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.78rem; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.08em; display: flex; align-items: center; gap: 6px;">
-    <span style="color: #059669; font-size: 0.95rem;">💬</span> AI Query & Prompt Box
-  </span>
-  <span style="font-size: 0.72rem; color: #64748b; font-weight: 500;">Press Enter ↵ or click Send</span>
-</div>
-""", unsafe_allow_html=True)
-
-    with st.form("ai_chat_form", clear_on_submit=True):
-        col_inp, col_btn, col_clr = st.columns([7, 1.2, 1])
-        with col_inp:
-            user_input = st.text_input(
-                "Query",
-                placeholder="Ask any question about crop prices, arrivals, delays, or enter /new, /followup, /insight...",
-                label_visibility="collapsed",
-            )
-        with col_btn:
-            send = st.form_submit_button("Send ↵", use_container_width=True, type="primary")
-        with col_clr:
-            clear = st.form_submit_button("Clear", use_container_width=True)
-
-    # ── Command Helper Guide (Always visible below chat box) ───────────────────
-    st.markdown("""
-<div style="margin-top: 0.45rem; margin-bottom: 1.15rem; padding: 0.65rem 1rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.03);">
-  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.80rem;">
-    <span style="font-weight: 700; color: #059669; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 4px;">
-      <span>⚡</span> Commands:
-    </span>
-    <span style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 7px; border-radius: 6px; font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 0.78rem; font-weight: 700; color: #065f46;">/new &lt;query&gt;</span>
-    <span style="color: #64748b; font-size: 0.75rem;">New visual</span>
-    <span style="color: #cbd5e1;">•</span>
-    <span style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 2px 7px; border-radius: 6px; font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 0.78rem; font-weight: 700; color: #166534;">/followup &lt;changes&gt;</span>
-    <span style="color: #64748b; font-size: 0.75rem;">Modify visual</span>
-    <span style="color: #cbd5e1;">•</span>
-    <span style="background: #fffbeb; border: 1px solid #fde68a; padding: 2px 7px; border-radius: 6px; font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 0.78rem; font-weight: 700; color: #92400e;">/insight [prompt]</span>
-    <span style="color: #64748b; font-size: 0.75rem;">Strategic insight</span>
-  </div>
-  <div style="font-size: 0.73rem; color: #64748b; font-weight: 500;">
-    Plain language queries also work directly
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-    if quick_query:
-        _handle_query(quick_query, df, client, api_key)
-
-    if clear:
-        st.session_state.ai_history = []
-        st.rerun()
-
-    if send and user_input and user_input.strip():
-        _handle_query(user_input.strip(), df, client, api_key)
-
-    # ── Render chat history ───────────────────────────────────────────────────
-    history = st.session_state.ai_history
-
-    if not history:
-        st.markdown("""
-<div style="text-align:center; padding: 3.5rem 2rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; margin-top: 1rem; box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.03);">
-  <div style="font-size:2.8rem; margin-bottom:0.6rem;">✨</div>
-  <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.15rem; font-weight: 700; color:#0f172a; margin-bottom:0.4rem;">Natural Language Market Query Engine</h3>
-  <p style="font-size:0.88rem; color:#64748b; max-width: 500px; margin: 0 auto; line-height: 1.5;">
-    Query wholesale prices, inflow volumes, weather correlations, or corridor transit bottlenecks in plain English.
-  </p>
-</div>
-""", unsafe_allow_html=True)
-        return
-
-    for i, msg in enumerate(history):
-        role = msg.get("role", "")
-
-        if role == "user":
-            st.markdown(
-                f'<div style="text-align:right; margin: 1rem 0;">'
-                f'<span style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color:#ffffff; padding: 10px 18px; border-radius: 18px 18px 4px 18px;'
-                f'font-size:0.9rem; font-weight: 500; display:inline-block; max-width:80%; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);">'
-                f'💬 {msg["text"]}</span></div>',
-                unsafe_allow_html=True,
-            )
-
-        elif role == "assistant":
-            fig_dict = msg.get("fig_dict")
-            model_tag = msg.get("model", "Built-in Analytics Engine")
-            is_followup = msg.get("is_followup", False)
-            tag = "↺ Follow-up" if is_followup else "✨ AI Generated Chart"
-
-            with st.container():
-                st.markdown(
-                    f'<div style="font-size:0.75rem; font-weight: 700; color:#059669; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom:0.4rem;">'
-                    f'{tag} · <span style="color:#64748b; font-weight: 500;">{model_tag}</span></div>',
-                    unsafe_allow_html=True,
-                )
-                if fig_dict:
-                    import plotly.io as pio
-                    fig = pio.from_json(go.Figure(fig_dict).to_json())
-                    st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
-
-                b1, b2, b3 = st.columns([1.2, 1.2, 4])
-                with b1:
-                    if st.button("📊 Generate Insight", key=f"insight_btn_{i}"):
-                        _trigger_insight(i, df, client, api_key)
-                with b2:
-                    if st.button("↺ Refine Query", key=f"followup_btn_{i}"):
-                        st.session_state["_prefill_followup"] = i
-                with b3:
-                    if msg.get("code"):
-                        with st.expander("🔍 View Python Code"):
-                            st.code(msg.get("code", ""), language="python")
-
-        elif role == "insight":
-            st.markdown(
-                f"""
-<div class="insight-card" style="margin: 0.8rem 0;">
-  <h4>💡 Analytical Intelligence</h4>
-  <div style="font-size: 0.88rem; line-height: 1.6; color: #1e293b;">
-    {msg.get("markdown", "")}
-  </div>
-</div>
-""",
-                unsafe_allow_html=True,
-            )
-
-        elif role == "error":
-            with st.container():
-                st.error(f"**{msg.get('title', 'Notice')}:** {msg.get('text', '')}")
-                if msg.get("code"):
-                    with st.expander("Generated code"):
-                        st.code(msg["code"], language="python")
-
-
-def _get_last_visual() -> Optional[dict]:
-    for msg in reversed(st.session_state.ai_history):
-        if msg.get("role") == "assistant" and msg.get("fig_dict"):
-            return msg
-    return None
-
-
-def _handle_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
-    """Intelligently route query to live Groq LLM or Built-in Analytics Engine."""
-    history = st.session_state.ai_history
-    history.append({"role": "user", "text": query})
-
-    command, payload = _parse_command(query)
-
-    # If no API key is provided, handle with built-in instant demo engine
-    if not api_key:
-        fig, code, insight = _run_demo_query(payload or query, df)
-        history.append({
-            "role": "assistant",
-            "fig_dict": fig.to_dict(),
-            "code": code,
-            "query": payload,
-            "model": "MandiFlow Instant Analytics Engine",
-            "is_followup": False,
-        })
-        if command == "insight" or "insight" in query.lower():
-            history.append({
-                "role": "insight",
-                "markdown": insight,
-                "model": "MandiFlow Intelligence",
-                "query": query,
-            })
-        st.session_state.ai_history = history
-        st.rerun()
-        return
-
-    # Live Groq API Execution
 INSIGHT_SYSTEM_PROMPT = """You are MandiFlow Intelligence, an executive agricultural supply chain economist and commodities market analyst.
 You are provided with the exact chart query and the real-world aggregated numbers, market volumes, prices, and distributions plotted on the user's dashboard.
 
@@ -508,14 +307,12 @@ def _summarize_visual_data(visual: dict) -> str:
     layout = fig_dict.get("layout", {})
 
     lines = []
-    # Title
     t_obj = layout.get("title", "")
     t_text = t_obj.get("text", "") if isinstance(t_obj, dict) else str(t_obj or "")
     if t_text:
         clean_title = re.sub(r"<[^>]+>", "", t_text).strip()
         lines.append(f"Chart Title: {clean_title}")
 
-    # Axes
     x_axis = layout.get("xaxis", {}).get("title", {}).get("text", "")
     y_axis = layout.get("yaxis", {}).get("title", {}).get("text", "")
     if x_axis or y_axis:
@@ -545,29 +342,318 @@ def _summarize_visual_data(visual: dict) -> str:
     return "\n".join(lines) if lines else "Plotted Data: Values extracted from visual."
 
 
-def _generate_insight_content(last_visual: dict, client, model: str, user_question: str = "") -> str:
-    """Generate executive agricultural market intelligence from actual plotted chart data."""
+def _build_insight_messages(last_visual: dict, user_question: str = "") -> list:
     data_summary = _summarize_visual_data(last_visual)
     query_context = last_visual.get("query", "Market Analysis")
-
-    user_prompt = f"""Chart Subject / Query: {query_context}
-{data_summary}
-"""
+    user_prompt = f"Chart Subject / Query: {query_context}\n{data_summary}\n"
     if user_question and user_question.strip().lower() not in ("/insight", "/insights", "insight"):
         user_prompt += f"\nUser Question: {user_question.strip()}\n"
     user_prompt += "\nAnalyze the exact figures above and provide executive market intelligence and strategic supply chain implications."
+    return [
+        {"role": "system", "content": INSIGHT_SYSTEM_PROMPT},
+        {"role": "user", "content": user_prompt},
+    ]
 
-    resp = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": INSIGHT_SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt},
-        ],
-        temperature=0.2,
-        max_tokens=900,
+
+def _get_last_visual() -> Optional[dict]:
+    for msg in reversed(st.session_state.ai_history):
+        if msg.get("role") == "assistant" and msg.get("fig_dict"):
+            return msg
+    return None
+
+
+# ── Auto-scroll Helper ────────────────────────────────────────────────────────
+
+def _inject_auto_scroll():
+    """Inject JavaScript to smoothly scroll the page down to the latest generated content."""
+    components.html(
+        """
+        <script>
+        function scrollToLatest() {
+            try {
+                const doc = window.parent.document;
+                const anchor = doc.getElementById('latest-output-anchor');
+                if (anchor) {
+                    anchor.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    return;
+                }
+                const main = doc.querySelector('section[data-testid="stMain"]') || doc.querySelector('.main');
+                if (main) {
+                    main.scrollTo({ top: main.scrollHeight, behavior: 'smooth' });
+                } else {
+                    window.parent.scrollTo({ top: doc.body.scrollHeight, behavior: 'smooth' });
+                }
+            } catch (e) {}
+        }
+        setTimeout(scrollToLatest, 80);
+        setTimeout(scrollToLatest, 300);
+        setTimeout(scrollToLatest, 700);
+        setTimeout(scrollToLatest, 1200);
+        </script>
+        """,
+        height=0,
     )
-    return resp.choices[0].message.content.strip()
 
+
+# ── Custom CSS for Floating Chat & Aesthetic ──────────────────────────────────
+
+_AI_CHAT_CSS = """
+<style>
+/* Modern floating chat bar pinned at bottom of viewport */
+[data-testid="stBottom"] {
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0) 0%, rgba(248, 250, 252, 0.94) 20%, #f8fafc 100%) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    padding-bottom: 14px !important;
+}
+
+[data-testid="stChatInput"] {
+    border-radius: 18px !important;
+    border: 1.5px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    box-shadow: 0 4px 24px -2px rgba(15, 23, 42, 0.09) !important;
+    transition: all 0.2s ease !important;
+}
+
+[data-testid="stChatInput"]:focus-within {
+    border-color: #059669 !important;
+    box-shadow: 0 0 0 3.5px rgba(5, 150, 105, 0.16) !important;
+}
+
+[data-testid="stChatInputSubmitButton"] {
+    color: #059669 !important;
+}
+
+/* Insight card design */
+.mandi-insight-container {
+    margin: 0.8rem 0;
+    padding: 1.1rem 1.3rem;
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+    border: 1px solid #a7f3d0;
+    border-radius: 14px;
+    box-shadow: 0 3px 12px -2px rgba(5, 150, 105, 0.08);
+}
+</style>
+"""
+
+
+# ── Render Page ───────────────────────────────────────────────────────────────
+
+def render(df: pd.DataFrame) -> None:
+    st.markdown(_AI_CHAT_CSS, unsafe_allow_html=True)
+
+    st.markdown(styles.page_header(
+        "MandiFlow AI Assistant",
+        "Interact with agricultural data in natural language. Query arrivals, price realization, weather impacts, and logistics corridors.",
+        badge="NATURAL LANGUAGE AI",
+    ), unsafe_allow_html=True)
+
+    client, api_key = _get_client()
+
+    # Session state initialization
+    if "ai_history" not in st.session_state:
+        st.session_state.ai_history = []
+    if "_scroll_needed" not in st.session_state:
+        st.session_state._scroll_needed = False
+
+    # ── Quick Prompts & Controls ──────────────────────────────────────────────
+    st.markdown("""
+<div style="font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin: 0.8rem 0 0.4rem 0;">
+  ⚡ Quick Sample Analytics (Click to Run Immediately)
+</div>
+""", unsafe_allow_html=True)
+
+    col1, col2, col3, col4 = st.columns([2.5, 2.5, 2.5, 1.2])
+    quick_query = ""
+    with col1:
+        if st.button("📊 Top 5 Crops by Inflow", key="quick_p1", use_container_width=True):
+            quick_query = "Top 5 Crops by Inflow"
+    with col2:
+        if st.button("🛡️ Price vs MSP Parity", key="quick_p2", use_container_width=True):
+            quick_query = "Price vs MSP Gap by Crop"
+    with col3:
+        if st.button("🌦️ Rainfall vs Arrivals", key="quick_p3", use_container_width=True):
+            quick_query = "Rainfall vs Arrival Trend"
+    with col4:
+        if st.button("🗑️ Clear", key="clear_chat_top", use_container_width=True):
+            st.session_state.ai_history = []
+            if "stream_insight_for_idx" in st.session_state:
+                del st.session_state["stream_insight_for_idx"]
+            st.rerun()
+
+    # ── Command Helper Guide ───────────────────────────────────────────────────
+    st.markdown("""
+<div style="margin-top: 0.5rem; margin-bottom: 1.2rem; padding: 0.65rem 1rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.03);">
+  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.80rem;">
+    <span style="font-weight: 700; color: #059669; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 4px;">
+      <span>⚡</span> Commands:
+    </span>
+    <span style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 7px; border-radius: 6px; font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 0.78rem; font-weight: 700; color: #065f46;">/new &lt;query&gt;</span>
+    <span style="color: #64748b; font-size: 0.75rem;">New visual</span>
+    <span style="color: #cbd5e1;">•</span>
+    <span style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 2px 7px; border-radius: 6px; font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 0.78rem; font-weight: 700; color: #166534;">/followup &lt;changes&gt;</span>
+    <span style="color: #64748b; font-size: 0.75rem;">Modify visual</span>
+    <span style="color: #cbd5e1;">•</span>
+    <span style="background: #fffbeb; border: 1px solid #fde68a; padding: 2px 7px; border-radius: 6px; font-family: 'SFMono-Regular', Consolas, Menlo, monospace; font-size: 0.78rem; font-weight: 700; color: #92400e;">/insight [prompt]</span>
+    <span style="color: #64748b; font-size: 0.75rem;">Strategic insight</span>
+  </div>
+  <div style="font-size: 0.73rem; color: #64748b; font-weight: 500;">
+    Type below in the floating chat bar
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+    # ── Handle quick queries ──────────────────────────────────────────────────
+    if quick_query:
+        st.session_state._scroll_needed = True
+        _handle_query(quick_query, df, client, api_key)
+        return
+
+    # ── Render chat history ───────────────────────────────────────────────────
+    history = st.session_state.ai_history
+
+    if not history and "stream_insight_for_idx" not in st.session_state:
+        st.markdown("""
+<div style="text-align:center; padding: 3.5rem 2rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; margin-top: 0.5rem; margin-bottom: 2rem; box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.03);">
+  <div style="font-size:2.8rem; margin-bottom:0.6rem;">✨</div>
+  <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.15rem; font-weight: 700; color:#0f172a; margin-bottom:0.4rem;">Natural Language Market Query Engine</h3>
+  <p style="font-size:0.88rem; color:#64748b; max-width: 500px; margin: 0 auto; line-height: 1.5;">
+    Query wholesale prices, inflow volumes, weather correlations, or corridor transit bottlenecks in plain English.
+    Type your prompt in the floating chat bar at the bottom ↓
+  </p>
+</div>
+""", unsafe_allow_html=True)
+    else:
+        for i, msg in enumerate(history):
+            role = msg.get("role", "")
+
+            if role == "user":
+                st.markdown(
+                    f'<div style="text-align:right; margin: 1rem 0;">'
+                    f'<span style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color:#ffffff; padding: 10px 18px; border-radius: 18px 18px 4px 18px;'
+                    f'font-size:0.9rem; font-weight: 500; display:inline-block; max-width:80%; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);">'
+                    f'💬 {msg["text"]}</span></div>',
+                    unsafe_allow_html=True,
+                )
+
+            elif role == "assistant":
+                fig_dict = msg.get("fig_dict")
+                model_tag = msg.get("model", "Built-in Analytics Engine")
+                is_followup = msg.get("is_followup", False)
+                tag = "↺ Follow-up" if is_followup else "✨ AI Generated Chart"
+
+                with st.container():
+                    st.markdown(
+                        f'<div style="font-size:0.75rem; font-weight: 700; color:#059669; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom:0.4rem;">'
+                        f'{tag} · <span style="color:#64748b; font-weight: 500;">{model_tag}</span></div>',
+                        unsafe_allow_html=True,
+                    )
+                    if fig_dict:
+                        import plotly.io as pio
+                        fig = pio.from_json(go.Figure(fig_dict).to_json())
+                        st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
+
+                    b1, b2 = st.columns([2, 5])
+                    with b1:
+                        if st.button("📊 Generate Insight", key=f"insight_btn_{i}"):
+                            st.session_state["stream_insight_for_idx"] = i
+                            st.session_state._scroll_needed = True
+                            st.rerun()
+                    with b2:
+                        if msg.get("code"):
+                            with st.expander("🔍 View Python Code"):
+                                st.code(msg.get("code", ""), language="python")
+
+            elif role == "insight":
+                with st.container():
+                    st.markdown("""
+<div style="margin: 0.8rem 0; padding: 1.1rem 1.3rem; background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); border: 1.5px solid #a7f3d0; border-radius: 14px;">
+  <div style="font-size: 0.72rem; font-weight: 800; color: #059669; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem;">💡 Analytical Intelligence</div>
+""", unsafe_allow_html=True)
+                    st.markdown(msg.get("markdown", ""))
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+            elif role == "error":
+                with st.container():
+                    st.error(f"**{msg.get('title', 'Notice')}:** {msg.get('text', '')}")
+                    if msg.get("code"):
+                        with st.expander("Generated code"):
+                            st.code(msg["code"], language="python")
+
+    # ── Handle Streaming Insight if triggered ─────────────────────────────────
+    if "stream_insight_for_idx" in st.session_state:
+        target_idx = st.session_state["stream_insight_for_idx"]
+        target_visual = None
+        if 0 <= target_idx < len(history) and history[target_idx].get("fig_dict"):
+            target_visual = history[target_idx]
+        else:
+            target_visual = _get_last_visual()
+
+        if target_visual:
+            st.markdown("""
+<div style="margin: 0.8rem 0; padding: 1.1rem 1.3rem; background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); border: 1.5px solid #a7f3d0; border-radius: 14px;">
+  <div style="font-size: 0.72rem; font-weight: 800; color: #059669; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem;">
+    💡 Analytical Intelligence &nbsp;<span style="font-weight: 500; color: #047857; text-transform: none; font-size: 0.72rem;">· streaming insights…</span>
+  </div>
+""", unsafe_allow_html=True)
+
+            model_name = "MandiFlow Instant Analytics"
+            if not api_key:
+                _, _, demo_text = _run_demo_query(target_visual.get("query", ""), df)
+                def _demo_token_stream():
+                    for token in re.split(r'(\s+)', demo_text):
+                        yield token
+                        time.sleep(0.012)
+                full_text = st.write_stream(_demo_token_stream())
+            else:
+                model_name = _resolve_model(client)
+                messages = _build_insight_messages(target_visual)
+                stream_resp = client.chat.completions.create(
+                    model=model_name,
+                    messages=messages,
+                    temperature=0.2,
+                    max_tokens=900,
+                    stream=True,
+                )
+                def _groq_token_stream():
+                    for chunk in stream_resp:
+                        delta = chunk.choices[0].delta
+                        token = getattr(delta, "content", None)
+                        if token:
+                            yield token
+                full_text = st.write_stream(_groq_token_stream())
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            # Persist the streamed insight into history
+            st.session_state.ai_history.append({
+                "role": "insight",
+                "markdown": full_text if isinstance(full_text, str) else "",
+                "model": model_name,
+                "query": "/insight",
+            })
+            del st.session_state["stream_insight_for_idx"]
+            st.session_state._scroll_needed = True
+            st.rerun()
+
+    # Anchor at the end of generated content
+    st.markdown('<div id="latest-output-anchor" style="height: 1px; margin-bottom: 80px;"></div>', unsafe_allow_html=True)
+
+    # ── Auto-scroll injection if needed ───────────────────────────────────────
+    if st.session_state.get("_scroll_needed"):
+        _inject_auto_scroll()
+        st.session_state._scroll_needed = False
+
+    # ── Floating Chat Input at Bottom (Native Streamlit Sticky Bottom) ─────────
+    chat_prompt = st.chat_input(
+        "💬  Ask about crop prices, arrivals, weather, transport corridors... or /new, /followup, /insight"
+    )
+    if chat_prompt and chat_prompt.strip():
+        st.session_state._scroll_needed = True
+        _handle_query(chat_prompt.strip(), df, client, api_key)
+
+
+# ── Query Handler ─────────────────────────────────────────────────────────────
 
 def _handle_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
     """Intelligently route query to live Groq LLM or Built-in Analytics Engine."""
@@ -576,6 +662,28 @@ def _handle_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
 
     command, payload = _parse_command(query)
 
+    # If it's an insight command, trigger streaming insight directly
+    if command == "insight" or "insight" in query.lower():
+        last_vis = _get_last_visual()
+        if not last_vis:
+            history.append({
+                "role": "error",
+                "title": "No Chart Found",
+                "text": "Generate a chart first, then ask for /insight.",
+            })
+            st.session_state.ai_history = history
+            st.session_state._scroll_needed = True
+            st.rerun()
+            return
+        # Find target index
+        for idx in range(len(history) - 1, -1, -1):
+            if history[idx].get("fig_dict"):
+                st.session_state["stream_insight_for_idx"] = idx
+                st.session_state._scroll_needed = True
+                st.session_state.ai_history = history
+                st.rerun()
+                return
+
     # If no API key is provided, handle with built-in instant demo engine
     if not api_key:
         fig, code, insight = _run_demo_query(payload or query, df)
@@ -583,18 +691,12 @@ def _handle_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
             "role": "assistant",
             "fig_dict": fig.to_dict(),
             "code": code,
-            "query": payload,
+            "query": payload or query,
             "model": "MandiFlow Instant Analytics Engine",
             "is_followup": False,
         })
-        if command == "insight" or "insight" in query.lower():
-            history.append({
-                "role": "insight",
-                "markdown": insight,
-                "model": "MandiFlow Intelligence",
-                "query": query,
-            })
         st.session_state.ai_history = history
+        st.session_state._scroll_needed = True
         st.rerun()
         return
 
@@ -603,46 +705,41 @@ def _handle_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
     generated_code = ""
 
     try:
-        if command == "insight":
+        prev_context = ""
+        if command == "followup":
             last_visual = _get_last_visual()
-            if last_visual is None:
-                history.append({
-                    "role": "error",
-                    "title": "No Chart Found",
-                    "text": "Generate a chart first, then ask for /insight.",
-                })
-            else:
-                insight_text = _generate_insight_content(last_visual, client, model, payload)
-                history.append({
-                    "role": "insight",
-                    "markdown": insight_text,
-                    "model": model,
-                    "query": query,
-                })
-        else:
-            prev_context = ""
-            if command == "followup":
-                last_visual = _get_last_visual()
-                if last_visual:
-                    prev_context = f"\nPrevious chart query: '{last_visual.get('query')}'.\nPrevious code:\n```python\n{last_visual.get('code')}\n```\n"
+            if last_visual:
+                prev_context = f"\nPrevious chart query: '{last_visual.get('query')}'.\nPrevious code:\n```python\n{last_visual.get('code')}\n```\n"
 
-            user_msg = f"{prev_context}Generate chart code for: {payload}" if prev_context else payload
-            resp = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": _system_prompt(df)},
-                    {"role": "user", "content": user_msg},
-                ],
-                temperature=0.1, max_tokens=1200,
-            )
-            generated_code = _sanitize_code(resp.choices[0].message.content.strip())
-            scope = {"df": df.copy(), "pd": pd, "px": px, "go": go}
-            exec(generated_code, scope)  # noqa: S102
-            fig = scope.get("fig")
-            if fig is None:
-                history.append({"role": "error", "title": "No Chart Produced", "text": "Model did not output a 'fig' object. Try rephrasing.", "code": generated_code})
-            else:
-                history.append({"role": "assistant", "fig_dict": fig.to_dict(), "code": generated_code, "query": payload, "model": model, "is_followup": (command == "followup")})
+        user_msg = f"{prev_context}Generate chart code for: {payload}" if prev_context else payload
+        resp = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": _system_prompt(df)},
+                {"role": "user", "content": user_msg},
+            ],
+            temperature=0.1, max_tokens=1200,
+        )
+        generated_code = _sanitize_code(resp.choices[0].message.content.strip())
+        scope = {"df": df.copy(), "pd": pd, "px": px, "go": go, "np": np}
+        exec(generated_code, scope)  # noqa: S102
+        fig = scope.get("fig")
+        if fig is None:
+            history.append({
+                "role": "error",
+                "title": "No Chart Produced",
+                "text": "Model did not output a 'fig' object. Try rephrasing.",
+                "code": generated_code,
+            })
+        else:
+            history.append({
+                "role": "assistant",
+                "fig_dict": fig.to_dict(),
+                "code": generated_code,
+                "query": payload or query,
+                "model": model,
+                "is_followup": (command == "followup"),
+            })
 
     except Exception as exc:
         history.append({
@@ -653,43 +750,5 @@ def _handle_query(query: str, df: pd.DataFrame, client, api_key: str) -> None:
         })
 
     st.session_state.ai_history = history
-    st.rerun()
-
-
-def _trigger_insight(visual_idx: int, df: pd.DataFrame, client, api_key: str) -> None:
-    history = st.session_state.ai_history
-    target_visual = None
-    if 0 <= visual_idx < len(history) and history[visual_idx].get("fig_dict"):
-        target_visual = history[visual_idx]
-    else:
-        target_visual = _get_last_visual()
-
-    if not target_visual:
-        return
-
-    if not api_key:
-        _, _, insight = _run_demo_query(target_visual.get("query", ""), df)
-        history.append({
-            "role": "insight",
-            "markdown": insight,
-            "model": "MandiFlow Instant Analytics",
-            "query": "/insight",
-        })
-        st.session_state.ai_history = history
-        st.rerun()
-        return
-
-    model = _resolve_model(client)
-    try:
-        insight_text = _generate_insight_content(target_visual, client, model)
-        history.append({
-            "role": "insight",
-            "markdown": insight_text,
-            "model": model,
-            "query": "/insight",
-        })
-    except Exception as exc:
-        history.append({"role": "error", "title": "Insight Error", "text": str(exc)})
-
-    st.session_state.ai_history = history
+    st.session_state._scroll_needed = True
     st.rerun()
